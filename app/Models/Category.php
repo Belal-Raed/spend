@@ -1,0 +1,76 @@
+<?php
+
+namespace App\Models;
+
+use App\Enums\TransactionType;
+use Database\Factories\CategoryFactory;
+use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Attributes\Scope;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+
+#[Fillable(['user_id', 'name', 'type'])]
+class Category extends Model
+{
+    /** @use HasFactory<CategoryFactory> */
+    use HasFactory;
+
+    /**
+     * Get the attributes that should be cast.
+     *
+     * @return array<string, string>
+     */
+    protected function casts(): array
+    {
+        return [
+            'type' => TransactionType::class,
+        ];
+    }
+
+    /**
+     * @return BelongsTo<User, $this>
+     */
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo(User::class);
+    }
+
+    /**
+     * @return HasMany<Transaction, $this>
+     */
+    public function transactions(): HasMany
+    {
+        return $this->hasMany(Transaction::class);
+    }
+
+    /**
+     * Whether this category is a default shared by every user.
+     */
+    public function isDefault(): bool
+    {
+        return $this->user_id === null;
+    }
+
+    /**
+     * Limit the query to the default categories and the user's own.
+     *
+     * @param  Builder<Category>  $query
+     */
+    #[Scope]
+    protected function visibleTo(Builder $query, User $user): void
+    {
+        $query->where(fn (Builder $query) => $query->whereNull('user_id')->orWhereBelongsTo($user));
+    }
+
+    /**
+     * @param  Builder<Category>  $query
+     */
+    #[Scope]
+    protected function ofType(Builder $query, TransactionType $type): void
+    {
+        $query->where('type', $type);
+    }
+}
