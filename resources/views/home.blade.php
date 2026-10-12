@@ -1,27 +1,46 @@
 <x-page title="الرئيسية">
-    <x-card title="الرصيد">
-        <x-amount :value="$balance['cash']" class="text-3xl font-semibold" />
+    <section class="flex flex-col gap-5 rounded-3xl bg-linear-to-bl from-emerald-500 to-emerald-800 p-6 text-white shadow-lg">
+        <div class="flex flex-col gap-1">
+            <h2 class="text-sm font-medium text-emerald-100">الرصيد</h2>
+            <x-amount :value="$balance['cash']" class="text-4xl font-bold" />
+        </div>
 
-        <dl class="flex flex-col gap-2 border-t border-gray-100 pt-3 text-sm">
-            <div class="flex justify-between gap-4">
-                <dt class="text-gray-600">ناقص الديون اللي عليّ</dt>
-                <dd><x-amount :value="0 - $balance['owed_by_me']" /></dd>
+        <dl class="grid grid-cols-2 gap-3">
+            <div class="flex flex-col gap-1 rounded-2xl bg-white/10 p-3">
+                <dt class="text-xs text-emerald-100">ناقص الديون اللي عليّ</dt>
+                <dd><x-amount :value="0 - $balance['owed_by_me']" class="text-lg font-semibold" /></dd>
             </div>
-            <div class="flex justify-between gap-4">
-                <dt class="text-gray-600">زائد الديون اللي إلي</dt>
-                <dd><x-amount :value="$balance['owed_to_me']" /></dd>
-            </div>
-            <div class="flex justify-between gap-4 border-t border-gray-100 pt-2 text-base font-semibold">
-                <dt>الرصيد بعد الديون</dt>
-                <dd><x-amount :value="$balance['after_debts']" /></dd>
+            <div class="flex flex-col gap-1 rounded-2xl bg-white/10 p-3">
+                <dt class="text-xs text-emerald-100">زائد الديون اللي إلي</dt>
+                <dd><x-amount :value="$balance['owed_to_me']" class="text-lg font-semibold" /></dd>
             </div>
         </dl>
-    </x-card>
+    </section>
 
-    <x-card title="مصاريف هذا الشهر">
-        <x-amount :value="$monthExpensesTotal" class="text-2xl font-semibold" />
-    </x-card>
+    <div class="grid grid-cols-2 gap-4">
+        <x-card title="الرصيد بعد الديون">
+            <x-amount :value="$balance['after_debts']" class="text-2xl font-bold" />
+        </x-card>
 
-    <x-debt-list title="ديون عليّ" :debts="$debtsOwedByMe" empty="ما عليك ديون مفتوحة." />
-    <x-debt-list title="ديون إلي" :debts="$debtsOwedToMe" empty="ما إلك ديون مفتوحة." />
+        <x-card title="مصاريف هذا الشهر">
+            <x-amount :value="$monthExpensesTotal" class="text-2xl font-bold text-rose-700" />
+        </x-card>
+    </div>
+
+    <div class="grid gap-4 md:grid-cols-2">
+        <x-debt-list title="ديون عليّ" :debts="$debtsOwedByMe" empty="ما عليك ديون مفتوحة." />
+        <x-debt-list title="ديون إلي" :debts="$debtsOwedToMe" empty="ما إلك ديون مفتوحة." />
+    </div>
+
+    <x-card title="آخر الحركات">
+        <x-slot:action>
+            <a href="{{ route('transactions.index') }}" class="text-sm font-semibold text-emerald-700 hover:underline">كل الحركات</a>
+        </x-slot:action>
+
+        @forelse ($recentTransactions as $transaction)
+            <x-transaction-item :transaction="$transaction" class="border-t border-slate-100 pt-3 first-of-type:border-t-0 first-of-type:pt-0" />
+        @empty
+            <p class="text-sm text-slate-500">لا توجد حركات بعد.</p>
+        @endforelse
+    </x-card>
 </x-page>

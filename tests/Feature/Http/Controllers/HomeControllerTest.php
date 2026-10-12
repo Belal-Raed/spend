@@ -111,7 +111,7 @@ class HomeControllerTest extends TestCase
         $this->actingAs($user)
             ->get(route('home'))
             ->assertViewHas('debtsOwedToMe', [])
-            ->assertDontSeeText('سامي');
+            ->assertSeeText('ما إلك ديون مفتوحة.');
     }
 
     public function test_does_not_show_another_users_transactions(): void
@@ -137,5 +137,35 @@ class HomeControllerTest extends TestCase
             ->get(route('home'))
             ->assertSee('&lt;script&gt;', escape: false)
             ->assertDontSee("<script>alert('xss')</script>", escape: false);
+    }
+
+    public function test_shows_the_five_latest_transactions_newest_first(): void
+    {
+        $user = User::factory()->create();
+        $transactions = Transaction::factory()->count(6)->for($user)->sequence(
+            ['occurred_on' => '2026-10-01'],
+            ['occurred_on' => '2026-10-02'],
+            ['occurred_on' => '2026-10-03'],
+            ['occurred_on' => '2026-10-04'],
+            ['occurred_on' => '2026-10-05'],
+            ['occurred_on' => '2026-10-06'],
+        )->create();
+
+        $response = $this->actingAs($user)->get(route('home'));
+
+        $this->assertSame(
+            $transactions->reverse()->take(5)->pluck('id')->all(),
+            $response->viewData('recentTransactions')->pluck('id')->all(),
+        );
+    }
+
+    public function test_does_not_show_another_users_latest_transactions(): void
+    {
+        Transaction::factory()->create(['note' => 'حركة شخص آخر']);
+
+        $this->actingAs(User::factory()->create())
+            ->get(route('home'))
+            ->assertSeeText('لا توجد حركات بعد.')
+            ->assertDontSeeText('حركة شخص آخر');
     }
 }

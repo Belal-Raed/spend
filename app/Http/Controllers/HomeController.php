@@ -10,8 +10,10 @@ use Illuminate\View\View;
 
 class HomeController extends Controller
 {
+    private const RECENT_TRANSACTIONS = 5;
+
     /**
-     * Show the user's balance, this month's spending and their open debts.
+     * Show the user's balance, this month's spending, their open debts and their latest transactions.
      */
     public function __invoke(Request $request, ReportService $reports): View
     {
@@ -22,6 +24,12 @@ class HomeController extends Controller
             'monthExpensesTotal' => $reports->summaryForPeriod($user, Period::ThisMonth)['expenses_total'],
             'debtsOwedByMe' => $reports->openDebts($user, DebtDirection::OwedByMe),
             'debtsOwedToMe' => $reports->openDebts($user, DebtDirection::OwedToMe),
+            'recentTransactions' => $user->transactions()
+                ->with('category:id,name')
+                ->orderByDesc('occurred_on')
+                ->orderByDesc('id')
+                ->limit(self::RECENT_TRANSACTIONS)
+                ->get(),
         ]);
     }
 }

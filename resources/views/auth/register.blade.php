@@ -10,8 +10,8 @@
         <x-button>إنشاء الحساب</x-button>
     </form>
 
-    <p class="text-sm text-gray-600">
+    <p class="text-sm text-slate-600">
         لديك حساب؟
-        <a href="{{ route('login') }}" class="font-medium text-gray-900 underline">سجّل الدخول</a>
+        <a href="{{ route('login') }}" class="font-semibold text-emerald-700 hover:underline">سجّل الدخول</a>
     </p>
 </x-auth-card>

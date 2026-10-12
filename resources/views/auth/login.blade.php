@@ -13,8 +13,8 @@
         <x-button>دخول</x-button>
     </form>
 
-    <p class="text-sm text-gray-600">
+    <p class="text-sm text-slate-600">
         ليس لديك حساب؟
-        <a href="{{ route('register') }}" class="font-medium text-gray-900 underline">أنشئ حسابًا</a>
+        <a href="{{ route('register') }}" class="font-semibold text-emerald-700 hover:underline">أنشئ حسابًا</a>
     </p>
 </x-auth-card>
