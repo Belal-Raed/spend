@@ -20,21 +20,14 @@ class DemoDataSeeder extends Seeder
      */
     private const TRANSACTIONS = [
         'income' => [
-            ['راتب', '3500.00', 'راتب الشهر الماضي', 40],
-            ['راتب', '3500.00', 'راتب الشهر', 10],
-            ['شغل حر', '600.00', 'تصميم موقع', 4],
+            ['راتب', '3000.00', 'راتب الشهر', 10],
         ],
         'expense' => [
-            ['بيت', '1200.00', 'إيجار', 38],
-            ['أكل', '310.50', 'مشتريات السوبرماركت', 35],
-            ['فواتير', '180.00', 'فاتورة الكهرباء', 33],
-            ['بيت', '1200.00', 'إيجار', 9],
-            ['أكل', '245.75', 'مشتريات السوبرماركت', 8],
-            ['مواصلات', '60.00', 'بنزين', 6],
-            ['اتصالات', '50.00', 'باقة الإنترنت', 5],
-            ['صحة', '85.00', 'دواء', 3],
-            ['أكل', '42.50', 'مطعم', 1],
-            ['مواصلات', '15.00', 'تاكسي', 0],
+            ['أكل', '500.00', 'مشتريات الشهر الماضي', 35],
+            ['بيت', '1000.00', 'إيجار', 9],
+            ['أكل', '300.00', 'مشتريات', 6],
+            ['مواصلات', '100.00', 'بنزين', 3],
+            ['فواتير', '100.00', 'فاتورة الكهرباء', 1],
         ],
     ];
 
@@ -45,13 +38,13 @@ class DemoDataSeeder extends Seeder
      * @var list<array{0: DebtDirection, 1: string, 2: string, 3: int, 4: ?string, 5: ?int}>
      */
     private const DEBTS = [
-        [DebtDirection::OwedByMe, 'خالد', '500.00', 20, '200.00', 7],
-        [DebtDirection::OwedToMe, 'سامي', '300.00', 12, null, null],
-        [DebtDirection::OwedToMe, 'محمود', '150.00', 36, '150.00', 30],
+        [DebtDirection::OwedByMe, 'خالد', '500.00', 20, '100.00', 5],
+        [DebtDirection::OwedToMe, 'سامي', '200.00', 12, null, null],
+        [DebtDirection::OwedToMe, 'محمود', '100.00', 36, '100.00', 30],
     ];
 
     /**
-     * Give the demo user a couple of months of income, expenses and debts.
+     * Give the demo user a few round-number income, expense and debt records.
      *
      * Safe to run more than once: a demo user who already has transactions is left alone.
      */

@@ -33,7 +33,7 @@ class DemoDataSeederTest extends TestCase
         $this->seed(DemoDataSeeder::class);
 
         $this->assertSame(
-            ['cash' => 4211.25, 'owed_by_me' => 300.0, 'owed_to_me' => 300.0, 'after_debts' => 4211.25],
+            ['cash' => 1200.0, 'owed_by_me' => 400.0, 'owed_to_me' => 200.0, 'after_debts' => 1000.0],
             app(ReportService::class)->balance($this->demoUser()),
         );
     }
@@ -46,11 +46,11 @@ class DemoDataSeederTest extends TestCase
         $owedByMe = $reports->openDebts($this->demoUser(), DebtDirection::OwedByMe);
         $owedToMe = $reports->openDebts($this->demoUser(), DebtDirection::OwedToMe);
 
-        $this->assertSame([['خالد', 200.0, 300.0]], array_map(
+        $this->assertSame([['خالد', 100.0, 400.0]], array_map(
             fn (array $debt): array => [$debt['counterparty'], $debt['repaid'], $debt['remaining']],
             $owedByMe,
         ));
-        $this->assertSame([['سامي', 0.0, 300.0]], array_map(
+        $this->assertSame([['سامي', 0.0, 200.0]], array_map(
             fn (array $debt): array => [$debt['counterparty'], $debt['repaid'], $debt['remaining']],
             $owedToMe,
         ));
@@ -64,7 +64,7 @@ class DemoDataSeederTest extends TestCase
         $this->seed(DemoDataSeeder::class);
         $this->seed(DemoDataSeeder::class);
 
-        $this->assertSame(18, $this->demoUser()->transactions()->count());
+        $this->assertSame(11, $this->demoUser()->transactions()->count());
     }
 
     public function test_uses_an_existing_demo_user_instead_of_creating_another(): void
@@ -74,7 +74,7 @@ class DemoDataSeederTest extends TestCase
         $this->seed(DemoDataSeeder::class);
 
         $this->assertTrue($this->demoUser()->is($existing));
-        $this->assertSame(18, $existing->transactions()->count());
+        $this->assertSame(11, $existing->transactions()->count());
     }
 
     public function test_database_seeder_can_run_twice(): void
@@ -83,6 +83,6 @@ class DemoDataSeederTest extends TestCase
         $this->seed(DatabaseSeeder::class);
 
         $this->assertDatabaseCount('users', 1);
-        $this->assertSame(18, $this->demoUser()->transactions()->count());
+        $this->assertSame(11, $this->demoUser()->transactions()->count());
     }
 }
