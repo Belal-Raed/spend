@@ -133,9 +133,33 @@ class Transaction extends Model
         return $this->settles_id !== null;
     }
 
+    /**
+     * Whether this transaction carries a category the user can choose.
+     *
+     * Debts and the payments made against them have none.
+     */
+    public function isGroupedByCategory(): bool
+    {
+        return $this->type->hasCategory() && ! $this->isRepayment();
+    }
+
     public function isSettled(): bool
     {
         return $this->settled_on !== null;
+    }
+
+    /**
+     * Whether this transaction added money to the user's balance rather than taking it out.
+     *
+     * Borrowing adds money and lending takes it out.
+     */
+    public function addsToBalance(): bool
+    {
+        return match ($this->type) {
+            TransactionType::Income => true,
+            TransactionType::Expense => false,
+            TransactionType::Debt => $this->debt_direction === DebtDirection::OwedByMe,
+        };
     }
 
     public function amountInCents(): int

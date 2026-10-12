@@ -15,6 +15,17 @@ enum DebtDirection: string
     case OwedToMe = 'owed_to_me';
 
     /**
+     * The name shown to the user.
+     */
+    public function label(): string
+    {
+        return match ($this) {
+            self::OwedByMe => 'عليّ',
+            self::OwedToMe => 'إلي',
+        };
+    }
+
+    /**
      * The transaction type recorded when a payment is made against a debt in this direction.
      */
     public function repaymentType(): TransactionType

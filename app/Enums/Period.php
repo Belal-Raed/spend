@@ -21,6 +21,22 @@ enum Period: string
     public const WEEK_STARTS_ON = CarbonInterface::SATURDAY;
 
     /**
+     * The name shown to the user.
+     */
+    public function label(): string
+    {
+        return match ($this) {
+            self::Today => 'اليوم',
+            self::Yesterday => 'أمس',
+            self::ThisWeek => 'هذا الأسبوع',
+            self::LastWeek => 'الأسبوع الماضي',
+            self::ThisMonth => 'هذا الشهر',
+            self::LastMonth => 'الشهر الماضي',
+            self::ThisYear => 'هذه السنة',
+        };
+    }
+
+    /**
      * The first and last day (inclusive) of the period relative to the given day.
      *
      * @return array{0: CarbonImmutable, 1: CarbonImmutable}
