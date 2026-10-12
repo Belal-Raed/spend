@@ -22,4 +22,12 @@ class TransactionPolicy
     {
         return $transaction->user_id === $user->id;
     }
+
+    /**
+     * A user may only record payments against their own debts.
+     */
+    public function repay(User $user, Transaction $transaction): bool
+    {
+        return $transaction->user_id === $user->id && $transaction->isDebt();
+    }
 }
