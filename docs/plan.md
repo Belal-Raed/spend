@@ -1,7 +1,7 @@
 # خطة مصاريفي
 
 تطبيق شخصي لتسجيل المصاريف والقبض والديون، من الويب ومن بوت تيليجرام.
-المتطلبات في [`intent/record-transactions.md`](../intent/record-transactions.md) والمصطلحات في [`glossary.md`](glossary.md).
+المتطلبات في [`intent/record-transactions.md`](../intent/record-transactions.md)، والمصطلحات في [`glossary.md`](glossary.md)، ومواصفات الويب في [`spec-web.md`](spec-web.md).
 
 آخر تحديث: 2026-10-12
 
