@@ -1,13 +1,27 @@
-<x-layout title="الرئيسية">
-    <main class="mx-auto flex max-w-2xl flex-col gap-6 p-4">
-        <header class="flex items-center justify-between">
-            <h1 class="text-xl font-semibold">أهلًا {{ auth()->user()->name }}</h1>
+<x-page title="الرئيسية">
+    <x-card title="الرصيد">
+        <x-amount :value="$balance['cash']" class="text-3xl font-semibold" />
 
-            <form method="POST" action="{{ route('logout') }}">
-                @csrf
+        <dl class="flex flex-col gap-2 border-t border-gray-100 pt-3 text-sm">
+            <div class="flex justify-between gap-4">
+                <dt class="text-gray-600">ناقص الديون اللي عليّ</dt>
+                <dd><x-amount :value="0 - $balance['owed_by_me']" /></dd>
+            </div>
+            <div class="flex justify-between gap-4">
+                <dt class="text-gray-600">زائد الديون اللي إلي</dt>
+                <dd><x-amount :value="$balance['owed_to_me']" /></dd>
+            </div>
+            <div class="flex justify-between gap-4 border-t border-gray-100 pt-2 text-base font-semibold">
+                <dt>الرصيد بعد الديون</dt>
+                <dd><x-amount :value="$balance['after_debts']" /></dd>
+            </div>
+        </dl>
+    </x-card>
 
-                <x-button class="text-sm">تسجيل الخروج</x-button>
-            </form>
-        </header>
-    </main>
-</x-layout>
+    <x-card title="مصاريف هذا الشهر">
+        <x-amount :value="$monthExpensesTotal" class="text-2xl font-semibold" />
+    </x-card>
+
+    <x-debt-list title="ديون عليّ" :debts="$debtsOwedByMe" empty="ما عليك ديون مفتوحة." />
+    <x-debt-list title="ديون إلي" :debts="$debtsOwedToMe" empty="ما إلك ديون مفتوحة." />
+</x-page>
