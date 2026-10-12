@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\RegisterController;
+use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\DebtController;
 use App\Http\Controllers\DebtRepaymentController;
 use App\Http\Controllers\HomeController;
@@ -24,6 +25,8 @@ Route::middleware('auth')->group(function () {
     Route::get('/debts', [DebtController::class, 'index'])->name('debts.index');
     Route::get('/debts/{debt}/repayments/create', [DebtRepaymentController::class, 'create'])->name('debts.repayments.create');
     Route::post('/debts/{debt}/repayments', [DebtRepaymentController::class, 'store'])->name('debts.repayments.store');
+
+    Route::resource('categories', CategoryController::class)->except(['show', 'create']);
 
     Route::post('/logout', [LoginController::class, 'destroy'])->name('logout');
 });

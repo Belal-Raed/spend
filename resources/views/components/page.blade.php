@@ -7,6 +7,7 @@
                 <a href="{{ route('home') }}" @class(['hover:text-gray-900', 'font-semibold' => request()->routeIs('home'), 'text-gray-600' => ! request()->routeIs('home')])>الرئيسية</a>
                 <a href="{{ route('transactions.index') }}" @class(['hover:text-gray-900', 'font-semibold' => request()->routeIs('transactions.*'), 'text-gray-600' => ! request()->routeIs('transactions.*')])>الحركات</a>
                 <a href="{{ route('debts.index') }}" @class(['hover:text-gray-900', 'font-semibold' => request()->routeIs('debts.*'), 'text-gray-600' => ! request()->routeIs('debts.*')])>الديون</a>
+                <a href="{{ route('categories.index') }}" @class(['hover:text-gray-900', 'font-semibold' => request()->routeIs('categories.*'), 'text-gray-600' => ! request()->routeIs('categories.*')])>التصنيفات</a>
             </nav>
 
             <div class="flex items-center gap-4 text-sm">
