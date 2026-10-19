@@ -2,7 +2,7 @@
     <form method="POST" action="{{ route('login.store') }}" class="flex flex-col gap-4">
         @csrf
 
-        <x-input name="email" type="email" label="البريد الإلكتروني" dir="ltr" autocomplete="username" required autofocus />
+        <x-input name="phone" type="tel" label="رقم الجوال" dir="ltr" autocomplete="username" placeholder="0599123456" required autofocus />
         <x-input name="password" type="password" label="كلمة المرور" dir="ltr" autocomplete="current-password" required />
 
         <label class="flex items-center gap-2 text-sm">

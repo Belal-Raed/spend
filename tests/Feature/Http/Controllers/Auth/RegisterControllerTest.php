@@ -19,7 +19,7 @@ class RegisterControllerTest extends TestCase
     {
         return [
             'name' => 'أبو محمد',
-            'email' => 'abu.mohammad@example.com',
+            'phone' => '0599123456',
             'password' => 'secret-password',
             'password_confirmation' => 'secret-password',
             ...$overrides,
@@ -45,7 +45,7 @@ class RegisterControllerTest extends TestCase
         $this->post(route('register.store'), $this->validPayload())
             ->assertRedirect(route('home'));
 
-        $user = User::query()->where('email', 'abu.mohammad@example.com')->sole();
+        $user = User::query()->where('phone', '0599123456')->sole();
 
         $this->assertSame('أبو محمد', $user->name);
         $this->assertTrue(Hash::check('secret-password', $user->password));
@@ -57,28 +57,36 @@ class RegisterControllerTest extends TestCase
         $this->post(route('register.store'), [])
             ->assertSessionHasErrors([
                 'name' => 'اكتب الاسم.',
-                'email' => 'اكتب البريد الإلكتروني.',
+                'phone' => 'اكتب رقم الجوال.',
                 'password' => 'اكتب كلمة المرور.',
             ]);
 
         $this->assertDatabaseCount('users', 0);
     }
 
-    public function test_email_that_already_has_an_account_is_rejected(): void
+    public function test_phone_typed_with_spaces_or_arabic_digits_is_stored_as_plain_digits(): void
     {
-        User::factory()->create(['email' => 'abu.mohammad@example.com']);
+        $this->post(route('register.store'), $this->validPayload(['phone' => '٠٥٩ ٩١٢-٣٤٥٦']))
+            ->assertRedirect(route('home'));
 
-        $this->post(route('register.store'), $this->validPayload())
-            ->assertSessionHasErrors(['email' => 'هذا البريد الإلكتروني مسجّل من قبل.']);
+        $this->assertSame('0599123456', User::query()->sole()->phone);
+    }
+
+    public function test_phone_that_already_has_an_account_is_rejected(): void
+    {
+        User::factory()->create(['phone' => '0599123456']);
+
+        $this->post(route('register.store'), $this->validPayload(['phone' => '059 912 3456']))
+            ->assertSessionHasErrors(['phone' => 'رقم الجوال هذا مسجّل من قبل.']);
 
         $this->assertDatabaseCount('users', 1);
         $this->assertGuest();
     }
 
-    public function test_malformed_email_is_rejected(): void
+    public function test_malformed_phone_is_rejected(): void
     {
-        $this->post(route('register.store'), $this->validPayload(['email' => 'not-an-email']))
-            ->assertSessionHasErrors(['email' => 'البريد الإلكتروني غير صحيح.']);
+        $this->post(route('register.store'), $this->validPayload(['phone' => 'abu.mohammad@example.com']))
+            ->assertSessionHasErrors(['phone' => 'رقم الجوال غير صحيح.']);
 
         $this->assertDatabaseCount('users', 0);
     }

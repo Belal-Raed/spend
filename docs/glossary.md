@@ -4,7 +4,7 @@ Shared vocabulary for the personal expenses app. Use these terms consistently in
 
 | Term | Arabic | Meaning |
 |---|---|---|
-| User | المستخدم | A person who records their own transactions, from the web app or from the Telegram bot. A Telegram user may have no email or password. |
+| User | المستخدم | A person who records their own transactions, from the web app or from the Telegram bot. Signs in to the web app with a phone number and password; a Telegram user may have neither. |
 | Transaction | الحركة | Any record of money moving: an expense, an income, or a debt. Has an amount, a date, and an optional note. |
 | Expense | المصروف | A transaction for money the user spent. Has a category. |
 | Income | القبض | A transaction for money the user received, with where it came from (من وين). Has a category. |

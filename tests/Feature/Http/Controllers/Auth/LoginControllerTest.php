@@ -10,7 +10,7 @@ class LoginControllerTest extends TestCase
 {
     use RefreshDatabase;
 
-    private const WRONG_CREDENTIALS = 'البريد الإلكتروني أو كلمة المرور غير صحيحة.';
+    private const WRONG_CREDENTIALS = 'رقم الجوال أو كلمة المرور غير صحيحة.';
 
     public function test_guest_sees_the_login_form(): void
     {
@@ -30,7 +30,17 @@ class LoginControllerTest extends TestCase
     {
         $user = User::factory()->create();
 
-        $this->post(route('login.store'), ['email' => $user->email, 'password' => 'password'])
+        $this->post(route('login.store'), ['phone' => $user->phone, 'password' => 'password'])
+            ->assertRedirect(route('home'));
+
+        $this->assertAuthenticatedAs($user);
+    }
+
+    public function test_phone_typed_with_spaces_or_arabic_digits_signs_the_user_in(): void
+    {
+        $user = User::factory()->create(['phone' => '0599123456']);
+
+        $this->post(route('login.store'), ['phone' => '٠٥٩ ٩١٢ ٣٤٥٦', 'password' => 'password'])
             ->assertRedirect(route('home'));
 
         $this->assertAuthenticatedAs($user);
@@ -41,17 +51,17 @@ class LoginControllerTest extends TestCase
         $user = User::factory()->create();
 
         $this->from(route('login'))
-            ->post(route('login.store'), ['email' => $user->email, 'password' => 'not-the-password'])
+            ->post(route('login.store'), ['phone' => $user->phone, 'password' => 'not-the-password'])
             ->assertRedirect(route('login'))
-            ->assertSessionHasErrors(['email' => self::WRONG_CREDENTIALS]);
+            ->assertSessionHasErrors(['phone' => self::WRONG_CREDENTIALS]);
 
         $this->assertGuest();
     }
 
-    public function test_unknown_email_gets_the_same_message_as_a_wrong_password(): void
+    public function test_unknown_phone_gets_the_same_message_as_a_wrong_password(): void
     {
-        $this->post(route('login.store'), ['email' => 'nobody@example.com', 'password' => 'password'])
-            ->assertSessionHasErrors(['email' => self::WRONG_CREDENTIALS]);
+        $this->post(route('login.store'), ['phone' => '0599999999', 'password' => 'password'])
+            ->assertSessionHasErrors(['phone' => self::WRONG_CREDENTIALS]);
 
         $this->assertGuest();
     }
@@ -60,8 +70,8 @@ class LoginControllerTest extends TestCase
     {
         $user = User::factory()->create(['telegram_id' => '123456789', 'password' => null]);
 
-        $this->post(route('login.store'), ['email' => $user->email, 'password' => 'password'])
-            ->assertSessionHasErrors(['email' => self::WRONG_CREDENTIALS]);
+        $this->post(route('login.store'), ['phone' => $user->phone, 'password' => 'password'])
+            ->assertSessionHasErrors(['phone' => self::WRONG_CREDENTIALS]);
 
         $this->assertGuest();
     }
@@ -70,7 +80,7 @@ class LoginControllerTest extends TestCase
     {
         $this->post(route('login.store'), [])
             ->assertSessionHasErrors([
-                'email' => 'اكتب البريد الإلكتروني.',
+                'phone' => 'اكتب رقم الجوال.',
                 'password' => 'اكتب كلمة المرور.',
             ]);
     }
@@ -81,11 +91,11 @@ class LoginControllerTest extends TestCase
         $user = User::factory()->create();
 
         for ($attempt = 1; $attempt <= 5; $attempt++) {
-            $this->post(route('login.store'), ['email' => $user->email, 'password' => 'not-the-password']);
+            $this->post(route('login.store'), ['phone' => $user->phone, 'password' => 'not-the-password']);
         }
 
-        $this->post(route('login.store'), ['email' => $user->email, 'password' => 'password'])
-            ->assertSessionHasErrors(['email' => 'محاولات كثيرة. حاول مرة أخرى بعد 60 ثانية.']);
+        $this->post(route('login.store'), ['phone' => $user->phone, 'password' => 'password'])
+            ->assertSessionHasErrors(['phone' => 'محاولات كثيرة. حاول مرة أخرى بعد 60 ثانية.']);
 
         $this->assertGuest();
     }
@@ -95,12 +105,12 @@ class LoginControllerTest extends TestCase
         $user = User::factory()->create();
 
         for ($attempt = 1; $attempt <= 5; $attempt++) {
-            $this->post(route('login.store'), ['email' => $user->email, 'password' => 'not-the-password']);
+            $this->post(route('login.store'), ['phone' => $user->phone, 'password' => 'not-the-password']);
         }
 
         $this->travel(61)->seconds();
 
-        $this->post(route('login.store'), ['email' => $user->email, 'password' => 'password'])
+        $this->post(route('login.store'), ['phone' => $user->phone, 'password' => 'password'])
             ->assertRedirect(route('home'));
 
         $this->assertAuthenticatedAs($user);
@@ -112,7 +122,7 @@ class LoginControllerTest extends TestCase
 
         $this->get(route('home'))->assertRedirect(route('login'));
 
-        $this->post(route('login.store'), ['email' => $user->email, 'password' => 'password'])
+        $this->post(route('login.store'), ['phone' => $user->phone, 'password' => 'password'])
             ->assertRedirect(route('home'));
     }
 
