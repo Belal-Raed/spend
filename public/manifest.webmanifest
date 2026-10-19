@@ -1,0 +1,31 @@
+{
+    "name": "مصاريفي",
+    "short_name": "مصاريفي",
+    "description": "سجّل مصاريفك وقبضك وديونك، واعرف رصيدك بأي وقت.",
+    "lang": "ar",
+    "dir": "rtl",
+    "start_url": "/",
+    "scope": "/",
+    "display": "standalone",
+    "orientation": "portrait",
+    "background_color": "#f2f2f7",
+    "theme_color": "#f2f2f7",
+    "icons": [
+        {
+            "src": "/icons/icon-192.png",
+            "sizes": "192x192",
+            "type": "image/png"
+        },
+        {
+            "src": "/icons/icon-512.png",
+            "sizes": "512x512",
+            "type": "image/png"
+        },
+        {
+            "src": "/icons/icon-512.png",
+            "sizes": "512x512",
+            "type": "image/png",
+            "purpose": "maskable"
+        }
+    ]
+}

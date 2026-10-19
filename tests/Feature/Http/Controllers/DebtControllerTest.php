@@ -45,7 +45,7 @@ class DebtControllerTest extends TestCase
         $response = $this->actingAs($user)->get(route('debts.index'));
 
         $response->assertOk()
-            ->assertSeeTextInOrder(['ديون عليّ', 'خالد', '400.00', 'من أصل', '500.00', 'ديون إلي', 'سامي', '200.00'])
+            ->assertSeeTextInOrder(['ديون عليّ', 'ديون إلي', 'خالد', '400.00', 'من أصل', '500.00', 'سامي', '200.00'])
             ->assertSee(route('debts.repayments.store', $partlyPaid), escape: false)
             ->assertSee(route('debts.repayments.create', $untouched), escape: false);
     }

@@ -4,6 +4,192 @@
 @source '../../storage/framework/views/*.php';
 
 @theme {
-    --font-sans: 'IBM Plex Sans Arabic', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
-        'Segoe UI Symbol', 'Noto Color Emoji';
+    /* The phone's own font: SF Arabic on an iPhone, the system font elsewhere. */
+    --font-sans: system-ui, -apple-system, 'SF Arabic', 'Segoe UI', Tahoma, 'Noto Sans Arabic', sans-serif,
+        'Apple Color Emoji', 'Segoe UI Emoji';
+}
+
+/*
+ * iOS system colours. Each one has a light and a dark value, and the page
+ * follows the phone's appearance setting.
+ */
+:root {
+    color-scheme: light dark;
+
+    --canvas: #f2f2f7;
+    --surface: #ffffff;
+    --raised: #ffffff;
+    --segment: #ffffff;
+    --fill: rgb(120 120 128 / 0.12);
+    --pressed: #d1d1d6;
+    --label: #000000;
+    --muted: rgb(60 60 67 / 0.6);
+    --faint: rgb(60 60 67 / 0.3);
+    --separator: rgb(60 60 67 / 0.29);
+    --bar: rgb(249 249 249 / 0.8);
+    --tint: #059669;
+    --positive: #059669;
+    --negative: #ff3b30;
+    --warning: #ff9500;
+    --switch-on: #34c759;
+}
+
+@media (prefers-color-scheme: dark) {
+    :root {
+        --canvas: #000000;
+        --surface: #1c1c1e;
+        --raised: #2c2c2e;
+        --segment: #636366;
+        --fill: rgb(118 118 128 / 0.24);
+        --pressed: #3a3a3c;
+        --label: #ffffff;
+        --muted: rgb(235 235 245 / 0.6);
+        --faint: rgb(235 235 245 / 0.3);
+        --separator: rgb(84 84 88 / 0.65);
+        --bar: rgb(22 22 24 / 0.8);
+        --tint: #10b981;
+        --positive: #30d158;
+        --negative: #ff453a;
+        --warning: #ff9f0a;
+        --switch-on: #30d158;
+    }
+}
+
+@theme inline {
+    --color-canvas: var(--canvas);
+    --color-surface: var(--surface);
+    --color-raised: var(--raised);
+    --color-segment: var(--segment);
+    --color-fill: var(--fill);
+    --color-pressed: var(--pressed);
+    --color-label: var(--label);
+    --color-muted: var(--muted);
+    --color-faint: var(--faint);
+    --color-separator: var(--separator);
+    --color-bar: var(--bar);
+    --color-tint: var(--tint);
+    --color-positive: var(--positive);
+    --color-negative: var(--negative);
+    --color-warning: var(--warning);
+    --color-switch-on: var(--switch-on);
+}
+
+@layer base {
+    html {
+        -webkit-tap-highlight-color: transparent;
+        -webkit-text-size-adjust: 100%;
+    }
+
+    body {
+        background-color: var(--canvas);
+        color: var(--label);
+    }
+
+    a,
+    button,
+    label,
+    summary {
+        touch-action: manipulation;
+    }
+
+    /* Below 16px, Safari zooms the page in when a field is focused. */
+    input,
+    select,
+    textarea {
+        font-size: 17px;
+    }
+}
+
+@layer components {
+    /* Rows in a grouped list are split by a hairline that starts after the row's icon. */
+    .ios-row + .ios-row > .ios-row-body {
+        border-top: 0.5px solid var(--separator);
+    }
+
+    .no-scrollbar {
+        scrollbar-width: none;
+    }
+
+    .no-scrollbar::-webkit-scrollbar {
+        display: none;
+    }
+
+    /* An action sheet slides up from the bottom of the screen. */
+    .sheet {
+        margin: auto auto 0;
+        width: 100%;
+        max-width: 32rem;
+        max-height: none;
+        border: 0;
+        background: transparent;
+        padding: 0 0.5rem calc(0.5rem + env(safe-area-inset-bottom));
+        color: var(--label);
+    }
+
+    .sheet[open] {
+        animation: sheet-up 0.3s cubic-bezier(0.2, 0.9, 0.3, 1);
+    }
+
+    .sheet::backdrop {
+        background: rgb(0 0 0 / 0.35);
+        animation: fade-in 0.3s ease;
+    }
+
+    /* The saved/deleted message shows for a moment, then fades away. */
+    .toast {
+        animation: toast 3s ease forwards;
+    }
+}
+
+@keyframes sheet-up {
+    from {
+        transform: translateY(100%);
+    }
+}
+
+@keyframes fade-in {
+    from {
+        opacity: 0;
+    }
+}
+
+@keyframes toast {
+    0% {
+        opacity: 0;
+        transform: translateY(-0.75rem) scale(0.95);
+    }
+
+    10%,
+    85% {
+        opacity: 1;
+        transform: none;
+    }
+
+    100% {
+        opacity: 0;
+        transform: translateY(-0.75rem);
+        visibility: hidden;
+    }
+}
+
+/* Moving between pages fades the content while the bars stay put. */
+@view-transition {
+    navigation: auto;
+}
+
+::view-transition-old(root),
+::view-transition-new(root) {
+    animation-duration: 0.2s;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    @view-transition {
+        navigation: none;
+    }
+
+    .sheet[open],
+    .sheet::backdrop,
+    .toast {
+        animation-duration: 0.01s;
+    }
 }

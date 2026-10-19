@@ -24,17 +24,19 @@ class CategoryControllerTest extends TestCase
     {
         $user = User::factory()->create();
         Category::factory()->create(['name' => 'مواصلات']);
-        Category::factory()->ownedBy($user)->create(['name' => 'أقساط']);
+        $installments = Category::factory()->ownedBy($user)->create(['name' => 'أقساط']);
         Category::factory()->income()->create(['name' => 'راتب']);
-        Category::factory()->income()->ownedBy($user)->create(['name' => 'إيجار محل']);
+        $shopRent = Category::factory()->income()->ownedBy($user)->create(['name' => 'إيجار محل']);
 
         $this->actingAs($user)
             ->get(route('categories.index'))
             ->assertOk()
             ->assertSeeTextInOrder([
-                'تصنيفات المصاريف', 'مواصلات', 'افتراضي', 'أقساط', 'تعديل',
-                'تصنيفات القبض', 'راتب', 'افتراضي', 'إيجار محل', 'تعديل',
-            ]);
+                'تصنيفات المصاريف', 'مواصلات', 'افتراضي', 'أقساط',
+                'تصنيفات القبض', 'راتب', 'افتراضي', 'إيجار محل',
+            ])
+            ->assertSee(route('categories.edit', $installments), escape: false)
+            ->assertSee(route('categories.edit', $shopRent), escape: false);
     }
 
     public function test_does_not_list_another_users_categories(): void

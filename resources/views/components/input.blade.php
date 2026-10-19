@@ -1,17 +1,23 @@
+{{-- A text field as a row of a grouped list: its label at the start and the field filling the rest. --}}
 @props(['name', 'label', 'type' => 'text', 'value' => null])
 
-<div class="flex flex-col gap-1">
-    <label for="{{ $name }}" class="text-sm font-medium text-slate-700">{{ $label }}</label>
+<label class="ios-row flex w-full items-center gap-3 ps-4">
+    <span class="ios-row-body flex min-h-11 min-w-0 flex-1 flex-col justify-center gap-0.5 py-1.5 pe-4">
+        <span class="flex items-center gap-3">
+            <span class="w-28 shrink-0">{{ $label }}</span>
 
-    <input
-        id="{{ $name }}"
-        name="{{ $name }}"
-        type="{{ $type }}"
-        @if ($type !== 'password') value="{{ old($name, $value) }}" @endif
-        {{ $attributes->merge(['class' => 'rounded-xl border border-slate-300 bg-white px-3 py-2.5 outline-none transition focus:border-emerald-600 focus:ring-2 focus:ring-emerald-600/20']) }}
-    >
+            <input
+                id="{{ $name }}"
+                name="{{ $name }}"
+                type="{{ $type }}"
+                @if ($type !== 'password') value="{{ old($name, $value) }}" @endif
+                @error($name) aria-invalid="true" @enderror
+                {{ $attributes->merge(['class' => 'min-w-0 flex-1 bg-transparent py-1.5 outline-none placeholder:text-faint']) }}
+            >
+        </span>
 
-    @error($name)
-        <p class="text-sm text-rose-600">{{ $message }}</p>
-    @enderror
-</div>
+        @error($name)
+            <span class="text-[13px] text-negative">{{ $message }}</span>
+        @enderror
+    </span>
+</label>

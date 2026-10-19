@@ -1,32 +1,17 @@
-<x-page title="دفعة سداد">
-    <form method="POST" action="{{ route('debts.repayments.store', $debt) }}" class="flex flex-col gap-4 rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
+<x-page title="دفعة سداد" modal :cancel="route('debts.index')" submit="repayment-form" submit-label="تسجيل">
+    <form id="repayment-form" method="POST" action="{{ route('debts.repayments.store', $debt) }}" class="flex flex-col gap-7">
         @csrf
 
-        <p class="text-sm text-gray-600">
+        <p class="-mb-4 text-center text-[15px] text-muted">
             @include('transactions.kind', ['transaction' => $debt])
-            · المتبقي <x-amount :value="$remaining" class="font-semibold text-gray-900" />
+            · المتبقي <x-amount :value="$remaining" class="font-semibold text-label" />
         </p>
 
-        <x-input
-            name="amount"
-            type="number"
-            label="مبلغ الدفعة"
-            :value="$remaining"
-            step="0.01"
-            min="0.01"
-            :max="$remaining"
-            inputmode="decimal"
-            dir="ltr"
-            required
-            autofocus
-        />
+        <x-amount-field label="مبلغ الدفعة" :value="$remaining" :max="$remaining" autofocus />
 
-        <x-input name="occurred_on" type="date" label="التاريخ" :value="today()->toDateString()" dir="ltr" required />
-        <x-input name="note" label="ملاحظة (اختياري)" />
-
-        <div class="flex items-center gap-4">
-            <x-button>تسجيل الدفعة</x-button>
-            <a href="{{ route('debts.index') }}" class="text-sm text-gray-600 underline hover:text-gray-900">إلغاء</a>
-        </div>
+        <x-group>
+            <x-input name="occurred_on" type="date" label="التاريخ" :value="today()->toDateString()" dir="ltr" class="text-end" required />
+            <x-input name="note" label="ملاحظة" placeholder="اختياري" />
+        </x-group>
     </form>
 </x-page>

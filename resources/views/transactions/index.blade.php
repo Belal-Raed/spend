@@ -1,84 +1,88 @@
 @use('App\Enums\Period')
 @use('App\Enums\TransactionType')
+@use('Illuminate\Support\Carbon')
+
+@php
+    $periodLinks = [['الكل', null], ...array_map(fn (Period $option): array => [$option->label(), $option], Period::cases())];
+
+    $days = $transactions->getCollection()->groupBy(fn ($transaction): string => $transaction->occurred_on->toDateString());
+
+    $dayTitle = function (string $date): string {
+        $day = Carbon::parse($date)->locale('ar');
+
+        return match (true) {
+            $day->isToday() => 'اليوم',
+            $day->isYesterday() => 'أمس',
+            $day->isCurrentYear() => $day->translatedFormat('l j F'),
+            default => $day->translatedFormat('l j F Y'),
+        };
+    };
+@endphp
 
 <x-page title="الحركات">
-    <form method="GET" action="{{ route('transactions.index') }}" class="flex flex-wrap items-end gap-4 rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
-        <x-select name="period" label="الفترة">
-            <option value="">كل الفترات</option>
-            @foreach (Period::cases() as $option)
-                <option value="{{ $option->value }}" @selected($option === $period)>{{ $option->label() }}</option>
+    <form method="GET" action="{{ route('transactions.index') }}" class="flex flex-col gap-4">
+        <nav class="no-scrollbar -mx-4 flex gap-2 overflow-x-auto px-4" aria-label="الفترة">
+            @foreach ($periodLinks as [$label, $option])
+                <a
+                    href="{{ route('transactions.index', array_filter(['period' => $option?->value, 'category' => $category?->id])) }}"
+                    @class([
+                        'shrink-0 rounded-full px-4 py-1.5 text-[15px] font-medium whitespace-nowrap transition active:opacity-60',
+                        'bg-tint text-white' => $option === $period,
+                        'bg-surface text-label' => $option !== $period,
+                    ])
+                    @if ($option === $period) aria-current="true" @endif
+                >{{ $label }}</a>
             @endforeach
-        </x-select>
+        </nav>
 
-        <x-select name="category" label="التصنيف">
-            <option value="">كل التصنيفات</option>
-            @foreach ($categories as $type => $categoriesOfType)
-                <optgroup label="{{ TransactionType::from($type)->label() }}">
-                    @foreach ($categoriesOfType as $option)
-                        <option value="{{ $option->id }}" @selected($option->is($category))>{{ $option->name }}</option>
-                    @endforeach
-                </optgroup>
-            @endforeach
-        </x-select>
+        @if ($period)
+            <input type="hidden" name="period" value="{{ $period->value }}">
+        @endif
 
-        <x-button>فلترة</x-button>
+        <x-group>
+            <x-select name="category" label="التصنيف" data-auto-submit>
+                <option value="">كل التصنيفات</option>
+                @foreach ($categories as $type => $categoriesOfType)
+                    <optgroup label="{{ TransactionType::from($type)->label() }}">
+                        @foreach ($categoriesOfType as $option)
+                            <option value="{{ $option->id }}" @selected($option->is($category))>{{ $option->name }}</option>
+                        @endforeach
+                    </optgroup>
+                @endforeach
+            </x-select>
+        </x-group>
+
+        <noscript>
+            <x-button class="w-full">فلترة</x-button>
+        </noscript>
     </form>
 
-    <section class="flex flex-col rounded-xl border border-gray-200 bg-white shadow-sm">
-        @forelse ($transactions as $transaction)
-            <article class="flex items-start justify-between gap-4 border-t border-gray-100 p-4 first:border-t-0">
-                <div class="flex flex-col gap-1">
-                    <span class="font-medium">
-                        @include('transactions.kind', ['transaction' => $transaction])
-                    </span>
-
-                    @if ($transaction->note)
-                        <span class="text-sm text-gray-600">{{ $transaction->note }}</span>
-                    @endif
-
-                    <span class="text-sm text-gray-600">
-                        {{ $transaction->occurred_on->toDateString() }}
-                        @if ($transaction->isDebt() && $transaction->isSettled())
-                            · انسدّ
-                        @endif
-                    </span>
-                </div>
-
-                <div class="flex flex-col items-end gap-2">
-                    <x-amount
-                        :value="$transaction->addsToBalance() ? $transaction->amount : 0 - $transaction->amount"
-                        @class(['font-semibold', 'text-green-700' => $transaction->addsToBalance(), 'text-red-700' => ! $transaction->addsToBalance()])
-                    />
-
-                    <div class="flex items-center gap-3 text-sm">
-                        <a href="{{ route('transactions.edit', $transaction) }}" class="text-gray-600 underline hover:text-gray-900">تعديل</a>
-
-                        <form method="POST" action="{{ route('transactions.destroy', $transaction) }}" onsubmit="return confirm('حذف هذه الحركة؟')">
-                            @csrf
-                            @method('DELETE')
-
-                            <button type="submit" class="cursor-pointer text-red-700 underline hover:text-red-900">حذف</button>
-                        </form>
-                    </div>
-                </div>
-            </article>
-        @empty
-            <p class="p-4 text-sm text-gray-600">لا توجد حركات.</p>
-        @endforelse
-    </section>
+    @forelse ($days as $date => $transactionsOfDay)
+        <x-group :title="$dayTitle($date)">
+            @foreach ($transactionsOfDay as $transaction)
+                <x-transaction-item :transaction="$transaction" />
+            @endforeach
+        </x-group>
+    @empty
+        <div class="flex flex-col items-center gap-2 py-16 text-center">
+            <x-icon name="list" class="size-12 text-faint" />
+            <p class="text-[17px] font-semibold">لا توجد حركات.</p>
+            <p class="text-[15px] text-muted">اضغط + فوق لتسجيل أول حركة.</p>
+        </div>
+    @endforelse
 
     @if ($transactions->hasPages())
-        <nav class="flex items-center justify-between text-sm">
+        <nav class="grid grid-cols-2 gap-3" aria-label="الصفحات">
             @if ($transactions->onFirstPage())
-                <span class="text-gray-400">الأحدث</span>
+                <span class="rounded-xl bg-surface py-3 text-center text-faint">الأحدث</span>
             @else
-                <a href="{{ $transactions->previousPageUrl() }}" class="underline hover:text-gray-900">الأحدث</a>
+                <a href="{{ $transactions->previousPageUrl() }}" class="rounded-xl bg-surface py-3 text-center text-tint active:bg-pressed">الأحدث</a>
             @endif
 
             @if ($transactions->hasMorePages())
-                <a href="{{ $transactions->nextPageUrl() }}" class="underline hover:text-gray-900">الأقدم</a>
+                <a href="{{ $transactions->nextPageUrl() }}" class="rounded-xl bg-surface py-3 text-center text-tint active:bg-pressed">الأقدم</a>
             @else
-                <span class="text-gray-400">الأقدم</span>
+                <span class="rounded-xl bg-surface py-3 text-center text-faint">الأقدم</span>
             @endif
         </nav>
     @endif

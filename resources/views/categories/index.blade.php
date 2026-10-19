@@ -1,46 +1,44 @@
 @use('App\Enums\TransactionType')
 
-<x-page title="التصنيفات">
+<x-page title="التصنيفات" :back="route('settings')" back-label="الإعدادات">
+    <x-slot:trailing></x-slot:trailing>
+
     @error('category')
-        <p role="alert" class="rounded-lg border border-red-200 bg-red-50 px-4 py-2 text-sm text-red-800">{{ $message }}</p>
+        <x-alert>{{ $message }}</x-alert>
     @enderror
 
-    <form method="POST" action="{{ route('categories.store') }}" class="flex flex-wrap items-start gap-4 rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
+    @foreach (['تصنيفات المصاريف' => TransactionType::Expense, 'تصنيفات القبض' => TransactionType::Income] as $title => $type)
+        <x-group :title="$title" :footer="$loop->last ? 'التصنيفات الافتراضية مشتركة ولا تُعدَّل. اضغط على تصنيفك لتعديله أو حذفه.' : null">
+            @foreach ($categories->get($type->value, []) as $category)
+                @if ($category->isDefault())
+                    <x-row>
+                        {{ $category->name }}
+
+                        <x-slot:detail>
+                            <span class="text-[15px] text-muted">افتراضي</span>
+                        </x-slot:detail>
+                    </x-row>
+                @else
+                    <x-row :href="route('categories.edit', $category)">{{ $category->name }}</x-row>
+                @endif
+            @endforeach
+        </x-group>
+    @endforeach
+
+    <form method="POST" action="{{ route('categories.store') }}" class="flex flex-col gap-3">
         @csrf
 
-        <x-input name="name" label="تصنيف جديد" required />
+        <x-group title="تصنيف جديد">
+            <x-input name="name" label="الاسم" placeholder="مثلًا: أقساط" required />
+        </x-group>
 
-        <x-select name="type" label="النوع" required>
-            @foreach ([TransactionType::Expense, TransactionType::Income] as $option)
-                <option value="{{ $option->value }}" @selected(old('type') === $option->value)>{{ $option->label() }}</option>
-            @endforeach
-        </x-select>
+        <x-segmented
+            name="type"
+            label="نوع التصنيف"
+            :options="[TransactionType::Expense->value => 'مصروف', TransactionType::Income->value => 'قبض']"
+            :value="TransactionType::Expense->value"
+        />
 
-        <x-button class="mt-6">إضافة</x-button>
+        <x-button class="w-full">إضافة التصنيف</x-button>
     </form>
-
-    @foreach (['تصنيفات المصاريف' => TransactionType::Expense, 'تصنيفات القبض' => TransactionType::Income] as $title => $type)
-        <x-card :title="$title">
-            @foreach ($categories->get($type->value, []) as $category)
-                <div class="flex items-center justify-between gap-4 border-t border-gray-100 pt-3 first-of-type:border-t-0 first-of-type:pt-0">
-                    <span class="font-medium">{{ $category->name }}</span>
-
-                    @if ($category->isDefault())
-                        <span class="text-sm text-gray-500">افتراضي</span>
-                    @else
-                        <div class="flex items-center gap-3 text-sm">
-                            <a href="{{ route('categories.edit', $category) }}" class="text-gray-600 underline hover:text-gray-900">تعديل</a>
-
-                            <form method="POST" action="{{ route('categories.destroy', $category) }}" onsubmit="return confirm('حذف هذا التصنيف؟')">
-                                @csrf
-                                @method('DELETE')
-
-                                <button type="submit" class="cursor-pointer text-red-700 underline hover:text-red-900">حذف</button>
-                            </form>
-                        </div>
-                    @endif
-                </div>
-            @endforeach
-        </x-card>
-    @endforeach
 </x-page>

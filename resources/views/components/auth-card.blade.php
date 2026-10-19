@@ -1,13 +1,16 @@
 @props(['title'])
 
 <x-layout :title="$title">
-    <main class="flex min-h-screen flex-col items-center justify-center gap-6 p-4">
-        <x-logo class="text-2xl" />
+    <main class="mx-auto flex min-h-dvh max-w-sm flex-col justify-center gap-8 px-4 pt-[calc(env(safe-area-inset-top)+2rem)] pb-[calc(env(safe-area-inset-bottom)+2rem)]">
+        <div class="flex flex-col items-center gap-4 text-center">
+            <img src="/icons/icon-192.png" alt="" class="size-20 rounded-[22%] shadow-lg shadow-emerald-900/20">
 
-        <div class="flex w-full max-w-sm flex-col gap-6 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-            <h1 class="text-xl font-bold">{{ $title }}</h1>
-
-            {{ $slot }}
+            <div class="flex flex-col gap-1">
+                <p class="text-[28px] font-bold">{{ config('app.name') }}</p>
+                <h1 class="text-[17px] text-muted">{{ $title }}</h1>
+            </div>
         </div>
+
+        {{ $slot }}
     </main>
 </x-layout>
