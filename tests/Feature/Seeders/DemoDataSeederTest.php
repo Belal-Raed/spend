@@ -18,7 +18,7 @@ class DemoDataSeederTest extends TestCase
 
     private function demoUser(): User
     {
-        return User::query()->where('email', DemoDataSeeder::EMAIL)->sole();
+        return User::query()->where('phone', DemoDataSeeder::PHONE)->sole();
     }
 
     public function test_creates_a_demo_user_who_can_sign_in_with_the_default_password(): void
@@ -69,7 +69,7 @@ class DemoDataSeederTest extends TestCase
 
     public function test_uses_an_existing_demo_user_instead_of_creating_another(): void
     {
-        $existing = User::factory()->create(['email' => DemoDataSeeder::EMAIL]);
+        $existing = User::factory()->create(['phone' => DemoDataSeeder::PHONE]);
 
         $this->seed(DemoDataSeeder::class);
 

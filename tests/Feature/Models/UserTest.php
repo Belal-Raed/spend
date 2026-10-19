@@ -11,12 +11,12 @@ class UserTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_telegram_user_needs_no_email_or_password(): void
+    public function test_telegram_user_needs_no_phone_or_password(): void
     {
         $user = User::create(['telegram_id' => '123456789', 'name' => 'أبو محمد']);
 
         $this->assertModelExists($user);
-        $this->assertNull($user->fresh()->email);
+        $this->assertNull($user->fresh()->phone);
     }
 
     public function test_rejects_two_users_with_the_same_telegram_account(): void

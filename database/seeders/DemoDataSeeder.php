@@ -11,7 +11,7 @@ use Illuminate\Database\Seeder;
 
 class DemoDataSeeder extends Seeder
 {
-    public const EMAIL = 'test@example.com';
+    public const PHONE = '0599000000';
 
     /**
      * Income and expenses as [category, amount, note, days ago].
@@ -52,8 +52,8 @@ class DemoDataSeeder extends Seeder
     {
         $this->call(DefaultCategoriesSeeder::class);
 
-        $user = User::query()->where('email', self::EMAIL)->first()
-            ?? User::factory()->create(['name' => 'Test User', 'email' => self::EMAIL]);
+        $user = User::query()->where('phone', self::PHONE)->first()
+            ?? User::factory()->create(['name' => 'Test User', 'phone' => self::PHONE]);
 
         if ($user->transactions()->exists()) {
             return;
