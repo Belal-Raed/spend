@@ -8,6 +8,7 @@ use App\Models\Transaction;
 use App\Models\User;
 use App\Services\TransactionService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Inertia\Testing\AssertableInertia as Assert;
 use Tests\TestCase;
 
 class DebtRepaymentControllerTest extends TestCase
@@ -40,9 +41,12 @@ class DebtRepaymentControllerTest extends TestCase
         $this->actingAs($user)
             ->get(route('debts.repayments.create', $debt))
             ->assertOk()
-            ->assertViewHas('remaining', '379.50')
-            ->assertSee('value="379.50"', escape: false)
-            ->assertSeeText('دين عليّ · خالد');
+            ->assertInertia(fn (Assert $page) => $page
+                ->component('debts/repayments/create')
+                ->where('remaining', '379.50')
+                ->where('debt.id', $debt->id)
+                ->where('debt.debt_direction_label', 'عليّ')
+                ->where('debt.counterparty', 'خالد'));
     }
 
     public function test_another_user_is_forbidden_from_the_payment_form(): void
@@ -97,7 +101,7 @@ class DebtRepaymentControllerTest extends TestCase
         $this->actingAs($user)
             ->post(route('debts.repayments.store', $debt))
             ->assertRedirect(route('debts.index'))
-            ->assertSessionHas('status', 'انسدّ الدين.');
+            ->assertInertiaFlash('status', 'انسدّ الدين.');
 
         $this->assertSame(['100.00', '400.00'], $debt->repayments()->orderBy('id')->pluck('amount')->all());
         $this->assertSame('2026-10-12', $debt->refresh()->settled_on->toDateString());
@@ -125,7 +129,7 @@ class DebtRepaymentControllerTest extends TestCase
                 'note' => 'دفعة أولى',
             ])
             ->assertRedirect(route('debts.index'))
-            ->assertSessionHas('status', 'تم تسجيل الدفعة.');
+            ->assertInertiaFlash('status', 'تم تسجيل الدفعة.');
 
         $repayment = $debt->repayments()->sole();
         $this->assertSame('150.25', $repayment->amount);
@@ -229,6 +233,8 @@ class DebtRepaymentControllerTest extends TestCase
             ->followingRedirects()
             ->post(route('debts.repayments.store', $debt))
             ->assertOk()
-            ->assertSeeText('هذا الدين انسدّ من قبل.');
+            ->assertInertia(fn (Assert $page) => $page
+                ->component('debts/index')
+                ->where('errors.amount', 'هذا الدين انسدّ من قبل.'));
     }
 }

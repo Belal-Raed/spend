@@ -4,19 +4,21 @@ namespace App\Http\Controllers;
 
 use App\Enums\DebtDirection;
 use App\Http\Requests\StoreDebtRepaymentRequest;
+use App\Http\Resources\TransactionResource;
 use App\Models\Transaction;
 use App\Services\Money;
 use App\Services\TransactionService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Gate;
-use Illuminate\View\View;
+use Inertia\Inertia;
+use Inertia\Response;
 
 class DebtRepaymentController extends Controller
 {
     /**
      * Show the form for a payment against a debt, filled in with what is left on it.
      */
-    public function create(Transaction $debt): View|RedirectResponse
+    public function create(Transaction $debt): Response|RedirectResponse
     {
         Gate::authorize('repay', $debt);
 
@@ -24,8 +26,8 @@ class DebtRepaymentController extends Controller
             return $this->backToDebts($debt)->withErrors(['amount' => 'هذا الدين انسدّ من قبل.']);
         }
 
-        return view('debts.repayments.create', [
-            'debt' => $debt,
+        return Inertia::render('debts/repayments/create', [
+            'debt' => new TransactionResource($debt),
             'remaining' => Money::toDecimal($debt->remainingInCents()),
         ]);
     }
@@ -37,10 +39,9 @@ class DebtRepaymentController extends Controller
     {
         $transactions->repayDebt($debt, $request->validated());
 
-        return $this->backToDebts($debt)->with(
-            'status',
-            $debt->refresh()->isSettled() ? 'انسدّ الدين.' : 'تم تسجيل الدفعة.',
-        );
+        Inertia::flash('status', $debt->refresh()->isSettled() ? 'انسدّ الدين.' : 'تم تسجيل الدفعة.');
+
+        return $this->backToDebts($debt);
     }
 
     /**

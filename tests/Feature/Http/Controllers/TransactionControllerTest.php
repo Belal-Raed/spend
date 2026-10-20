@@ -266,7 +266,7 @@ class TransactionControllerTest extends TestCase
         $this->actingAs($user)
             ->post(route('transactions.store'), $this->expensePayload($category))
             ->assertRedirect(route('transactions.index'))
-            ->assertSessionHas('status', 'تم تسجيل الحركة.');
+            ->assertInertiaFlash('status', 'تم تسجيل الحركة.');
 
         $transaction = $user->transactions()->sole();
         $this->assertSame(TransactionType::Expense, $transaction->type);
@@ -456,7 +456,7 @@ class TransactionControllerTest extends TestCase
                 'note' => 'عشاء',
             ])
             ->assertRedirect(route('transactions.index'))
-            ->assertSessionHas('status', 'تم تعديل الحركة.');
+            ->assertInertiaFlash('status', 'تم تعديل الحركة.');
 
         $transaction->refresh();
         $this->assertSame('99.90', $transaction->amount);
@@ -559,7 +559,7 @@ class TransactionControllerTest extends TestCase
         $this->actingAs($user)
             ->delete(route('transactions.destroy', $transaction))
             ->assertRedirect(route('transactions.index'))
-            ->assertSessionHas('status', 'تم حذف الحركة.');
+            ->assertInertiaFlash('status', 'تم حذف الحركة.');
 
         $this->assertModelMissing($transaction);
     }

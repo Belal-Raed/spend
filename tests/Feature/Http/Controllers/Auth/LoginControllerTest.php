@@ -4,6 +4,7 @@ namespace Tests\Feature\Http\Controllers\Auth;
 
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Inertia\Testing\AssertableInertia as Assert;
 use Tests\TestCase;
 
 class LoginControllerTest extends TestCase
@@ -16,7 +17,7 @@ class LoginControllerTest extends TestCase
     {
         $this->get(route('login'))
             ->assertOk()
-            ->assertViewIs('auth.login');
+            ->assertInertia(fn (Assert $page) => $page->component('auth/login'));
     }
 
     public function test_signed_in_user_is_redirected_away_from_the_login_form(): void

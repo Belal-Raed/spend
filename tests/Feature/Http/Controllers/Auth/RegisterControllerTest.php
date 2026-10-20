@@ -4,6 +4,7 @@ namespace Tests\Feature\Http\Controllers\Auth;
 
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Inertia\Testing\AssertableInertia as Assert;
 use Illuminate\Support\Facades\Hash;
 use Tests\TestCase;
 
@@ -30,7 +31,7 @@ class RegisterControllerTest extends TestCase
     {
         $this->get(route('register'))
             ->assertOk()
-            ->assertViewIs('auth.register');
+            ->assertInertia(fn (Assert $page) => $page->component('auth/register'));
     }
 
     public function test_signed_in_user_is_redirected_away_from_the_registration_form(): void

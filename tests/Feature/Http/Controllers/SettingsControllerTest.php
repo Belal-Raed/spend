@@ -5,6 +5,7 @@ namespace Tests\Feature\Http\Controllers;
 use App\Models\Category;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Inertia\Testing\AssertableInertia as Assert;
 use Tests\TestCase;
 
 class SettingsControllerTest extends TestCase
@@ -18,37 +19,22 @@ class SettingsControllerTest extends TestCase
 
     public function test_shows_the_users_name_and_phone(): void
     {
-        $this->actingAs(User::factory()->create(['name' => 'أبو محمد', 'phone' => '0599123456']))
+        $user = User::factory()->create(['name' => 'أبو محمد', 'phone' => '0599123456']);
+
+        $this->actingAs($user)
             ->get(route('settings'))
             ->assertOk()
-            ->assertViewIs('settings')
-            ->assertSeeTextInOrder(['أبو محمد', '0599123456']);
+            ->assertInertia(fn (Assert $page) => $page
+                ->component('settings')
+                ->where('auth.user.name', 'أبو محمد')
+                ->where('auth.user.phone', '0599123456'));
     }
 
-    public function test_escapes_dangerous_content_in_the_user_name(): void
+    public function test_never_sends_the_page_a_raw_script_tag_from_the_user_name(): void
     {
         $this->actingAs(User::factory()->create(['name' => "<script>alert('xss')</script>"]))
             ->get(route('settings'))
-            ->assertSee('&lt;script&gt;', escape: false)
-            ->assertDontSee("<script>alert('xss')</script>", escape: false);
-    }
-
-    public function test_links_to_categories_and_to_signing_out(): void
-    {
-        $this->actingAs(User::factory()->create())
-            ->get(route('settings'))
-            ->assertSee(route('categories.index'), escape: false)
-            ->assertSee('action="'.route('logout').'"', escape: false);
-    }
-
-    public function test_offers_the_automatic_light_and_dark_themes(): void
-    {
-        $this->actingAs(User::factory()->create())
-            ->get(route('settings'))
-            ->assertSee('name="theme" value="auto"', escape: false)
-            ->assertSee('name="theme" value="light"', escape: false)
-            ->assertSee('name="theme" value="dark"', escape: false)
-            ->assertSeeTextInOrder(['المظهر', 'تلقائي', 'فاتح', 'داكن']);
+            ->assertDontSee('<script>alert', escape: false);
     }
 
     public function test_counts_only_the_users_own_categories(): void
@@ -57,8 +43,8 @@ class SettingsControllerTest extends TestCase
         Category::factory()->count(2)->ownedBy($user)->create();
         Category::factory()->create();
 
-        $response = $this->actingAs($user)->get(route('settings'));
-
-        $this->assertSame(2, $response->viewData('customCategoriesCount'));
+        $this->actingAs($user)
+            ->get(route('settings'))
+            ->assertInertia(fn (Assert $page) => $page->where('customCategoriesCount', 2));
     }
 }
