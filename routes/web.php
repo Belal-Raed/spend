@@ -5,6 +5,7 @@ use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\DebtController;
 use App\Http\Controllers\DebtRepaymentController;
+use App\Http\Controllers\ExportController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\SettingsController;
 use App\Http\Controllers\TransactionController;
@@ -30,6 +31,7 @@ Route::middleware('auth')->group(function () {
     Route::resource('categories', CategoryController::class)->except(['show', 'create']);
 
     Route::get('/settings', SettingsController::class)->name('settings');
+    Route::get('/export', ExportController::class)->name('export');
 
     Route::post('/logout', [LoginController::class, 'destroy'])->name('logout');
 });

@@ -5,11 +5,13 @@ import { cx } from '@/lib/cx';
 
 /**
  * One row of a grouped list. It is a link when given `href`, a button when
- * given `onClick`, and plain text otherwise. `icon` draws a coloured square
- * at the start, and `detail` sits at the end, before the chevron that links show.
+ * given `onClick`, and plain text otherwise. A link with `download` fetches a
+ * file instead of visiting a page. `icon` draws a coloured square at the
+ * start, and `detail` sits at the end, before the chevron that links show.
  */
 export default function Row({
     href,
+    download = false,
     onClick,
     icon,
     tone = 'bg-tint',
@@ -19,6 +21,7 @@ export default function Row({
     children,
 }: {
     href?: string;
+    download?: boolean;
     onClick?: () => void;
     icon?: IconName;
     tone?: string;
@@ -53,6 +56,14 @@ export default function Row({
             </span>
         </>
     );
+
+    if (href !== undefined && download) {
+        return (
+            <a href={href} download className={className}>
+                {content}
+            </a>
+        );
+    }
 
     if (href !== undefined) {
         return (
