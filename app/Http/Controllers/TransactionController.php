@@ -50,7 +50,7 @@ class TransactionController extends Controller
             'transactions' => $transactions,
             'period' => $period,
             'category' => $category,
-            'categories' => Category::query()->visibleTo($user)->orderBy('name')->get()->groupBy('type'),
+            'categories' => Category::query()->visibleTo($user)->inDisplayOrder()->get()->groupBy('type'),
         ]);
     }
 
@@ -112,6 +112,6 @@ class TransactionController extends Controller
             return new Collection;
         }
 
-        return Category::query()->visibleTo($user)->ofType($type)->orderBy('name')->get();
+        return Category::query()->visibleTo($user)->ofType($type)->inDisplayOrder()->get();
     }
 }

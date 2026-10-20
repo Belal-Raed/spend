@@ -10,8 +10,9 @@
 }
 
 /*
- * iOS system colours. Each one has a light and a dark value, and the page
- * follows the phone's appearance setting.
+ * iOS system colours. Each one has a light and a dark value. The page follows
+ * the phone's appearance setting unless the user picked a theme in Settings,
+ * which sets data-theme="light" or data-theme="dark" on <html>.
  */
 :root {
     color-scheme: light dark;
@@ -34,8 +35,13 @@
     --switch-on: #34c759;
 }
 
+:root[data-theme='light'] {
+    color-scheme: light;
+}
+
+/* The dark values, used when the phone is in dark mode or the user picked the dark theme. */
 @media (prefers-color-scheme: dark) {
-    :root {
+    :root:not([data-theme='light']) {
         --canvas: #000000;
         --surface: #1c1c1e;
         --raised: #2c2c2e;
@@ -53,6 +59,27 @@
         --warning: #ff9f0a;
         --switch-on: #30d158;
     }
+}
+
+:root[data-theme='dark'] {
+    color-scheme: dark;
+
+    --canvas: #000000;
+    --surface: #1c1c1e;
+    --raised: #2c2c2e;
+    --segment: #636366;
+    --fill: rgb(118 118 128 / 0.24);
+    --pressed: #3a3a3c;
+    --label: #ffffff;
+    --muted: rgb(235 235 245 / 0.6);
+    --faint: rgb(235 235 245 / 0.3);
+    --separator: rgb(84 84 88 / 0.65);
+    --bar: rgb(22 22 24 / 0.8);
+    --tint: #10b981;
+    --positive: #30d158;
+    --negative: #ff453a;
+    --warning: #ff9f0a;
+    --switch-on: #30d158;
 }
 
 @theme inline {

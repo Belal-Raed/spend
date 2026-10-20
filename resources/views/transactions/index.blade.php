@@ -27,7 +27,7 @@
                     href="{{ route('transactions.index', array_filter(['period' => $option?->value, 'category' => $category?->id])) }}"
                     @class([
                         'shrink-0 rounded-full px-4 py-1.5 text-[15px] font-medium whitespace-nowrap transition active:opacity-60',
-                        'bg-tint text-white' => $option === $period,
+                        'bg-emerald-600 text-white' => $option === $period,
                         'bg-surface text-label' => $option !== $period,
                     ])
                     @if ($option === $period) aria-current="true" @endif

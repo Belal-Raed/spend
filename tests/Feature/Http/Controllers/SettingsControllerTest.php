@@ -41,6 +41,16 @@ class SettingsControllerTest extends TestCase
             ->assertSee('action="'.route('logout').'"', escape: false);
     }
 
+    public function test_offers_the_automatic_light_and_dark_themes(): void
+    {
+        $this->actingAs(User::factory()->create())
+            ->get(route('settings'))
+            ->assertSee('name="theme" value="auto"', escape: false)
+            ->assertSee('name="theme" value="light"', escape: false)
+            ->assertSee('name="theme" value="dark"', escape: false)
+            ->assertSeeTextInOrder(['المظهر', 'تلقائي', 'فاتح', 'داكن']);
+    }
+
     public function test_counts_only_the_users_own_categories(): void
     {
         $user = User::factory()->create();

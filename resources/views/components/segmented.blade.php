@@ -2,8 +2,9 @@
     An iOS segmented control. With `name` it is a set of radio buttons for a
     form, with `options` as [value => label] and `value` checked. Without a
     name it switches between pages, with `links` as [[label, href, isActive]].
+    `title` shows a small heading above it.
 --}}
-@props(['name' => null, 'options' => [], 'value' => null, 'links' => [], 'label' => null])
+@props(['name' => null, 'options' => [], 'value' => null, 'links' => [], 'label' => null, 'title' => null])
 
 @php
     $segment = 'flex min-h-8 cursor-pointer items-center justify-center rounded-[7px] px-2 text-center text-[13px] font-semibold transition';
@@ -11,6 +12,10 @@
 @endphp
 
 <div class="flex flex-col gap-1.5">
+    @if ($title)
+        <p class="px-4 text-[13px] text-muted" aria-hidden="true">{{ $title }}</p>
+    @endif
+
     <div
         {{ $attributes->merge(['class' => 'grid auto-cols-fr grid-flow-col gap-0.5 rounded-[9px] bg-fill p-0.5 select-none']) }}
         @if ($name) role="radiogroup" @endif

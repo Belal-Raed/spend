@@ -206,6 +206,18 @@ class TransactionControllerTest extends TestCase
         $this->assertEqualsCanonicalizing([$default->id, $own->id], $response->viewData('categories')->pluck('id')->all());
     }
 
+    public function test_new_transaction_form_lists_categories_by_name_with_the_catch_all_last(): void
+    {
+        $user = User::factory()->create();
+        Category::factory()->create(['name' => 'أخرى']);
+        Category::factory()->create(['name' => 'مواصلات']);
+        Category::factory()->ownedBy($user)->create(['name' => 'أقساط']);
+
+        $response = $this->actingAs($user)->get(route('transactions.create'));
+
+        $this->assertSame(['أقساط', 'مواصلات', 'أخرى'], $response->viewData('categories')->pluck('name')->all());
+    }
+
     public function test_income_form_offers_income_categories(): void
     {
         $salary = Category::factory()->income()->create();

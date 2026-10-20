@@ -39,6 +39,18 @@ class CategoryControllerTest extends TestCase
             ->assertSee(route('categories.edit', $shopRent), escape: false);
     }
 
+    public function test_lists_the_catch_all_default_after_the_other_defaults(): void
+    {
+        $user = User::factory()->create();
+        Category::factory()->create(['name' => 'أخرى']);
+        Category::factory()->create(['name' => 'مواصلات']);
+        Category::factory()->ownedBy($user)->create(['name' => 'أقساط']);
+
+        $this->actingAs($user)
+            ->get(route('categories.index'))
+            ->assertSeeTextInOrder(['مواصلات', 'أخرى', 'أقساط']);
+    }
+
     public function test_does_not_list_another_users_categories(): void
     {
         Category::factory()->ownedBy(User::factory()->create())->create(['name' => 'تصنيف خاص']);

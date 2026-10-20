@@ -37,6 +37,67 @@ document.addEventListener('click', (event) => {
 });
 
 /**
+ * The theme picker in Settings: "auto" follows the phone, "light" and "dark"
+ * override it. The choice is kept on this device only.
+ */
+const themeChoices = document.querySelectorAll('input[name=theme]');
+
+const applyTheme = (theme) => {
+    if (theme === 'light' || theme === 'dark') {
+        document.documentElement.dataset.theme = theme;
+    } else {
+        delete document.documentElement.dataset.theme;
+    }
+
+    document.querySelectorAll('meta[name=theme-color]').forEach((meta) => {
+        const isDark = theme === 'dark' || (theme !== 'light' && meta.media.includes('dark'));
+        meta.content = isDark ? '#000000' : '#f2f2f7';
+    });
+};
+
+if (themeChoices.length) {
+    let savedTheme = 'auto';
+
+    try {
+        savedTheme = localStorage.getItem('theme') ?? 'auto';
+    } catch {}
+
+    themeChoices.forEach((choice) => {
+        choice.checked = choice.value === savedTheme;
+
+        choice.addEventListener('change', () => {
+            try {
+                if (choice.value === 'auto') {
+                    localStorage.removeItem('theme');
+                } else {
+                    localStorage.setItem('theme', choice.value);
+                }
+            } catch {}
+
+            applyTheme(choice.value);
+        });
+    });
+}
+
+/**
+ * The debts screen keeps the open tab in the address (#owed-to-me), so it
+ * comes back after recording a payment or going back.
+ */
+const debtTabs = document.querySelectorAll('input[name=debts-tab]');
+
+debtTabs.forEach((tab) => {
+    const hash = '#' + tab.id.replace(/^tab-/, '');
+
+    if (location.hash === hash) {
+        tab.checked = true;
+    }
+
+    tab.addEventListener('change', () => {
+        history.replaceState(null, '', tab === debtTabs[0] ? location.pathname : hash);
+    });
+});
+
+/**
  * Filters apply as soon as a [data-auto-submit] field changes.
  */
 document.addEventListener('change', (event) => {

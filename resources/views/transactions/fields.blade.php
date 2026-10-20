@@ -27,7 +27,6 @@
         label="التاريخ"
         :value="($transaction?->occurred_on ?? today())->toDateString()"
         dir="ltr"
-        class="text-end"
         required
     />
 

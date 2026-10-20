@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\DebtDirection;
 use App\Http\Requests\StoreDebtRepaymentRequest;
 use App\Models\Transaction;
 use App\Services\Money;
@@ -20,7 +21,7 @@ class DebtRepaymentController extends Controller
         Gate::authorize('repay', $debt);
 
         if ($debt->isSettled()) {
-            return redirect()->route('debts.index')->withErrors(['amount' => 'هذا الدين انسدّ من قبل.']);
+            return $this->backToDebts($debt)->withErrors(['amount' => 'هذا الدين انسدّ من قبل.']);
         }
 
         return view('debts.repayments.create', [
@@ -36,9 +37,19 @@ class DebtRepaymentController extends Controller
     {
         $transactions->repayDebt($debt, $request->validated());
 
-        return redirect()->route('debts.index')->with(
+        return $this->backToDebts($debt)->with(
             'status',
             $debt->refresh()->isSettled() ? 'انسدّ الدين.' : 'تم تسجيل الدفعة.',
         );
+    }
+
+    /**
+     * Send the user back to the debts screen, on the tab the debt is listed under.
+     */
+    private function backToDebts(Transaction $debt): RedirectResponse
+    {
+        $redirect = redirect()->route('debts.index');
+
+        return $debt->debt_direction === DebtDirection::OwedToMe ? $redirect->withFragment('owed-to-me') : $redirect;
     }
 }

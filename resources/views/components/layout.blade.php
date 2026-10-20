@@ -9,6 +9,20 @@
         <meta name="theme-color" content="#f2f2f7" media="(prefers-color-scheme: light)">
         <meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)">
 
+        {{-- Applies the theme picked in Settings before the page is drawn, so it never flashes the other one. --}}
+        <script>
+            try {
+                const theme = localStorage.getItem('theme');
+
+                if (theme === 'light' || theme === 'dark') {
+                    document.documentElement.dataset.theme = theme;
+                    document.querySelectorAll('meta[name=theme-color]').forEach((meta) => {
+                        meta.content = theme === 'dark' ? '#000000' : '#f2f2f7';
+                    });
+                }
+            } catch {}
+        </script>
+
         {{-- Added to the home screen, the app opens full screen without the browser bars. --}}
         <meta name="mobile-web-app-capable" content="yes">
         <meta name="apple-mobile-web-app-capable" content="yes">

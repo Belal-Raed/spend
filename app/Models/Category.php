@@ -19,6 +19,11 @@ class Category extends Model
     use HasFactory;
 
     /**
+     * The name of the default catch-all category of each type.
+     */
+    public const OTHER = 'أخرى';
+
+    /**
      * Get the attributes that should be cast.
      *
      * @return array<string, string>
@@ -72,5 +77,16 @@ class Category extends Model
     protected function ofType(Builder $query, TransactionType $type): void
     {
         $query->where('type', $type);
+    }
+
+    /**
+     * Sort by name, with the catch-all «أخرى» last.
+     *
+     * @param  Builder<Category>  $query
+     */
+    #[Scope]
+    protected function inDisplayOrder(Builder $query): void
+    {
+        $query->orderByRaw('name = ?', [self::OTHER])->orderBy('name');
     }
 }

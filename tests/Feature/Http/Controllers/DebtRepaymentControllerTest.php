@@ -103,6 +103,16 @@ class DebtRepaymentControllerTest extends TestCase
         $this->assertSame('2026-10-12', $debt->refresh()->settled_on->toDateString());
     }
 
+    public function test_payment_on_a_debt_owed_to_the_user_returns_to_that_tab(): void
+    {
+        $user = User::factory()->create();
+        $debt = $this->debt($user, DebtDirection::OwedToMe);
+
+        $this->actingAs($user)
+            ->post(route('debts.repayments.store', $debt), ['amount' => '100.00'])
+            ->assertRedirect(route('debts.index').'#owed-to-me');
+    }
+
     public function test_partial_payment_leaves_the_debt_open(): void
     {
         $user = User::factory()->create();

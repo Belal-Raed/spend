@@ -1,6 +1,4 @@
-<x-page title="الرئيسية">
-    <p class="-mt-6 px-0.5 text-[15px] text-muted">أهلًا، {{ auth()->user()->name }}</p>
-
+<x-page title="الرئيسية" :subtitle="'أهلًا، '.auth()->user()->name">
     <section class="flex flex-col gap-5 rounded-2xl bg-linear-to-bl from-emerald-500 to-emerald-800 p-5 text-white shadow-lg shadow-emerald-900/20">
         <div class="flex flex-col gap-1">
             <h2 class="text-[15px] font-medium text-white/75">الرصيد</h2>

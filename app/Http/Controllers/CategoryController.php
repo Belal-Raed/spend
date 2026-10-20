@@ -20,7 +20,7 @@ class CategoryController extends Controller
         $categories = Category::query()
             ->visibleTo($request->user())
             ->orderByRaw('user_id is not null')
-            ->orderBy('name')
+            ->inDisplayOrder()
             ->get()
             ->groupBy('type');
 

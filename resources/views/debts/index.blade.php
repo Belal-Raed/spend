@@ -18,7 +18,7 @@
                 <label class="flex min-h-8 cursor-pointer items-center justify-center gap-1.5 rounded-[7px] text-[13px] font-semibold transition has-checked:bg-segment has-checked:shadow-sm has-checked:shadow-black/10 has-focus-visible:ring-2 has-focus-visible:ring-tint">
                     <input type="radio" name="debts-tab" id="tab-{{ $id }}" class="sr-only" @checked($loop->first)>
                     {{ $label }}
-                    <span class="rounded-full bg-fill px-1.5 text-[11px] tabular-nums text-muted">{{ count($debts) }}</span>
+                    <span class="font-normal tabular-nums text-muted">{{ count($debts) }}</span>
                 </label>
             @endforeach
         </div>

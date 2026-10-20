@@ -10,10 +10,19 @@
             <span class="truncate text-[20px] font-semibold">{{ $user->name }}</span>
 
             @if ($user->phone)
-                <span dir="ltr" class="self-end text-[15px] text-muted tabular-nums">{{ $user->phone }}</span>
+                <span dir="ltr" class="self-start text-[15px] text-muted tabular-nums">{{ $user->phone }}</span>
             @endif
         </div>
     </section>
+
+    {{-- The choice is saved on this device by app.js, so the form is never submitted. --}}
+    <x-segmented
+        name="theme"
+        label="المظهر"
+        title="المظهر"
+        :options="['auto' => 'تلقائي', 'light' => 'فاتح', 'dark' => 'داكن']"
+        value="auto"
+    />
 
     <x-group>
         <x-row :href="route('categories.index')" icon="tag" tone="bg-warning">

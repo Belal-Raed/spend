@@ -1,13 +1,13 @@
 {{--
     The app shell around every signed-in screen.
 
-    A main screen has a large title, the tab bar, and a + button for a new
+    A main screen has a large title (with an optional subtitle under it), the tab bar, and a + button for a new
     transaction. A modal screen (a form) has a small title between a cancel
     link and a save button that submits the form with the id given in
     `submit`, and no tab bar. `back` adds a back link to a main screen.
     The `trailing` slot replaces the + button.
 --}}
-@props(['title', 'modal' => false, 'cancel' => null, 'submit' => null, 'submitLabel' => 'حفظ', 'back' => null, 'backLabel' => null])
+@props(['title', 'subtitle' => null, 'modal' => false, 'cancel' => null, 'submit' => null, 'submitLabel' => 'حفظ', 'back' => null, 'backLabel' => null])
 
 @php
     // Each tab as [route, label, icon, pattern of the routes it is active on].
@@ -62,7 +62,13 @@
         </header>
 
         @unless ($modal)
-            <h1 class="px-4 pt-1 pb-2 text-[34px] leading-tight font-bold">{{ $title }}</h1>
+            <div class="flex flex-col gap-0.5 px-4 pt-1 pb-2">
+                <h1 class="text-[34px] leading-tight font-bold">{{ $title }}</h1>
+
+                @if ($subtitle)
+                    <p class="text-[15px] text-muted">{{ $subtitle }}</p>
+                @endif
+            </div>
         @endunless
 
         <div data-scroll-sentinel aria-hidden="true"></div>

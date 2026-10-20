@@ -20,6 +20,7 @@
             <x-segmented
                 name="debt_direction"
                 label="اتجاه الدين"
+                title="اتجاه الدين"
                 :options="[DebtDirection::OwedByMe->value => 'عليّ (استدنت)', DebtDirection::OwedToMe->value => 'إلي (داينت)']"
             />
         @endif
