@@ -1,5 +1,6 @@
 import { Head, usePage } from '@inertiajs/react';
 import type { ReactNode } from 'react';
+import InstallButton from '@/components/install-button';
 
 /** The shell around the sign-in and sign-up screens: the app icon and name above the form. */
 export default function AuthCard({ title, children }: { title: string; children: ReactNode }) {
@@ -19,6 +20,8 @@ export default function AuthCard({ title, children }: { title: string; children:
             </div>
 
             {children}
+
+            <InstallButton variant="link" />
         </main>
     );
 }

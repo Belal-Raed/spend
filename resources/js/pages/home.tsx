@@ -2,6 +2,7 @@ import { Link, usePage } from '@inertiajs/react';
 import Amount from '@/components/amount';
 import DebtList from '@/components/debt-list';
 import Group from '@/components/group';
+import InstallButton from '@/components/install-button';
 import Page from '@/components/page';
 import Row from '@/components/row';
 import TransactionItem from '@/components/transaction-item';
@@ -25,6 +26,8 @@ export default function Home({
 
     return (
         <Page title="الرئيسية" subtitle={`أهلًا، ${auth.user?.name}`}>
+            <InstallButton variant="card" />
+
             <section className="flex flex-col gap-5 rounded-2xl bg-linear-to-bl from-emerald-500 to-emerald-800 p-5 text-white shadow-lg shadow-emerald-900/20">
                 <div className="flex flex-col gap-1">
                     <h2 className="text-[15px] font-medium text-white/75">الرصيد</h2>
