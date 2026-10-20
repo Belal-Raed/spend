@@ -7,7 +7,6 @@ use App\Http\Requests\UpdateCategoryRequest;
 use App\Http\Resources\CategoryResource;
 use App\Models\Category;
 use Illuminate\Http\RedirectResponse;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -17,10 +16,9 @@ class CategoryController extends Controller
     /**
      * List the shared default categories and the user's own, grouped by transaction type.
      */
-    public function index(Request $request): Response
+    public function index(): Response
     {
         $categories = Category::query()
-            ->visibleTo($request->user())
             ->orderByRaw('user_id is not null')
             ->inDisplayOrder()
             ->get()

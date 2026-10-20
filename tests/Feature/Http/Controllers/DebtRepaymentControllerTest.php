@@ -6,7 +6,6 @@ use App\Enums\DebtDirection;
 use App\Enums\TransactionType;
 use App\Models\Transaction;
 use App\Models\User;
-use App\Services\TransactionService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Inertia\Testing\AssertableInertia as Assert;
 use Tests\TestCase;
@@ -36,7 +35,7 @@ class DebtRepaymentControllerTest extends TestCase
     {
         $user = User::factory()->create();
         $debt = $this->debt($user);
-        app(TransactionService::class)->repayDebt($debt, ['amount' => '120.50']);
+        $this->repayAsOwner($debt, ['amount' => '120.50']);
 
         $this->actingAs($user)
             ->get(route('debts.repayments.create', $debt))
@@ -49,13 +48,13 @@ class DebtRepaymentControllerTest extends TestCase
                 ->where('debt.counterparty', 'خالد'));
     }
 
-    public function test_another_user_is_forbidden_from_the_payment_form(): void
+    public function test_another_user_gets_not_found_from_the_payment_form(): void
     {
         $debt = $this->debt(User::factory()->create());
 
         $this->actingAs(User::factory()->create())
             ->get(route('debts.repayments.create', $debt))
-            ->assertForbidden();
+            ->assertNotFound();
     }
 
     public function test_payment_form_is_forbidden_for_a_transaction_that_is_not_a_debt(): void
@@ -72,7 +71,7 @@ class DebtRepaymentControllerTest extends TestCase
     {
         $user = User::factory()->create();
         $debt = $this->debt($user);
-        app(TransactionService::class)->repayDebt($debt);
+        $this->repayAsOwner($debt);
 
         $this->actingAs($user)
             ->get(route('debts.repayments.create', $debt))
@@ -88,7 +87,7 @@ class DebtRepaymentControllerTest extends TestCase
 
         $this->post(route('debts.repayments.store', $debt))->assertRedirect(route('login'));
 
-        $this->assertFalse($debt->repayments()->exists());
+        $this->assertDatabaseMissing('transactions', ['settles_id' => $debt->id]);
     }
 
     public function test_payment_without_an_amount_pays_everything_left_and_settles_the_debt(): void
@@ -96,7 +95,7 @@ class DebtRepaymentControllerTest extends TestCase
         $this->travelTo('2026-10-12');
         $user = User::factory()->create();
         $debt = $this->debt($user);
-        app(TransactionService::class)->repayDebt($debt, ['amount' => '100', 'occurred_on' => '2026-10-01']);
+        $this->repayAsOwner($debt, ['amount' => '100', 'occurred_on' => '2026-10-01']);
 
         $this->actingAs($user)
             ->post(route('debts.repayments.store', $debt))
@@ -175,7 +174,7 @@ class DebtRepaymentControllerTest extends TestCase
     {
         $user = User::factory()->create();
         $debt = $this->debt($user);
-        app(TransactionService::class)->repayDebt($debt);
+        $this->repayAsOwner($debt);
 
         $this->actingAs($user)
             ->post(route('debts.repayments.store', $debt))
@@ -199,15 +198,15 @@ class DebtRepaymentControllerTest extends TestCase
         $this->assertFalse($debt->repayments()->exists());
     }
 
-    public function test_another_user_is_forbidden_from_paying_a_debt(): void
+    public function test_another_user_gets_not_found_from_paying_a_debt(): void
     {
         $debt = $this->debt(User::factory()->create());
 
         $this->actingAs(User::factory()->create())
             ->post(route('debts.repayments.store', $debt))
-            ->assertForbidden();
+            ->assertNotFound();
 
-        $this->assertFalse($debt->repayments()->exists());
+        $this->assertDatabaseMissing('transactions', ['settles_id' => $debt->id]);
     }
 
     public function test_payment_is_forbidden_against_a_transaction_that_is_not_a_debt(): void
@@ -226,7 +225,7 @@ class DebtRepaymentControllerTest extends TestCase
     {
         $user = User::factory()->create();
         $debt = $this->debt($user);
-        app(TransactionService::class)->repayDebt($debt);
+        $this->repayAsOwner($debt);
 
         $this->actingAs($user)
             ->from(route('debts.index'))

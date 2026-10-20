@@ -16,6 +16,7 @@ class DefaultCategoriesSeederTest extends TestCase
     {
         $this->seed(DefaultCategoriesSeeder::class);
         $this->seed(DefaultCategoriesSeeder::class);
+        $this->signIn();
 
         $this->assertSame(10, Category::query()->whereNull('user_id')->count());
         $this->assertTrue(Category::query()->ofType(TransactionType::Expense)->where('name', 'أكل')->exists());

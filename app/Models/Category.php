@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Enums\TransactionType;
+use App\Models\Concerns\BelongsToTenant;
 use Database\Factories\CategoryFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Scope;
@@ -12,9 +13,17 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
+/**
+ * A label for grouping expenses or income.
+ *
+ * A category without a user is a default shared by everyone, so each user
+ * sees the shared defaults alongside their own.
+ */
 #[Fillable(['user_id', 'name', 'type'])]
 class Category extends Model
 {
+    use BelongsToTenant;
+
     /** @use HasFactory<CategoryFactory> */
     use HasFactory;
 
@@ -60,14 +69,13 @@ class Category extends Model
     }
 
     /**
-     * Limit the query to the default categories and the user's own.
+     * Limit the query to the shared defaults and the tenant's own categories.
      *
      * @param  Builder<Category>  $query
      */
-    #[Scope]
-    protected function visibleTo(Builder $query, User $user): void
+    protected function limitToTenant(Builder $query, User $tenant): void
     {
-        $query->where(fn (Builder $query) => $query->whereNull('user_id')->orWhereBelongsTo($user));
+        $query->where(fn (Builder $query) => $query->whereNull($query->qualifyColumn('user_id'))->orWhereBelongsTo($tenant));
     }
 
     /**

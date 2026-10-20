@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Enums\DebtDirection;
 use App\Enums\TransactionType;
+use App\Models\Concerns\BelongsToTenant;
 use App\Services\Money;
 use Carbon\CarbonImmutable;
 use Carbon\CarbonInterface;
@@ -41,6 +42,8 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 ])]
 class Transaction extends Model
 {
+    use BelongsToTenant;
+
     /** @use HasFactory<TransactionFactory> */
     use HasFactory;
 

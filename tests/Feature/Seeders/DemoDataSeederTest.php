@@ -16,16 +16,23 @@ class DemoDataSeederTest extends TestCase
 {
     use RefreshDatabase;
 
-    private function demoUser(): User
+    /**
+     * Sign the demo user in, so queries see their records.
+     */
+    private function signInDemoUser(): User
     {
-        return User::query()->where('phone', DemoDataSeeder::PHONE)->sole();
+        $user = User::query()->where('phone', DemoDataSeeder::PHONE)->sole();
+
+        $this->actingAs($user);
+
+        return $user;
     }
 
     public function test_creates_a_demo_user_who_can_sign_in_with_the_default_password(): void
     {
         $this->seed(DemoDataSeeder::class);
 
-        $this->assertTrue(Hash::check('password', $this->demoUser()->password));
+        $this->assertTrue(Hash::check('password', $this->signInDemoUser()->password));
     }
 
     public function test_gives_the_demo_user_income_expenses_and_debts(): void
@@ -34,7 +41,7 @@ class DemoDataSeederTest extends TestCase
 
         $this->assertSame(
             ['cash' => 1200.0, 'owed_by_me' => 400.0, 'owed_to_me' => 200.0, 'after_debts' => 1000.0],
-            app(ReportService::class)->balance($this->demoUser()),
+            app(ReportService::class)->balance($this->signInDemoUser()),
         );
     }
 
@@ -43,8 +50,8 @@ class DemoDataSeederTest extends TestCase
         $this->seed(DemoDataSeeder::class);
 
         $reports = app(ReportService::class);
-        $owedByMe = $reports->openDebts($this->demoUser(), DebtDirection::OwedByMe);
-        $owedToMe = $reports->openDebts($this->demoUser(), DebtDirection::OwedToMe);
+        $owedByMe = $reports->openDebts($this->signInDemoUser(), DebtDirection::OwedByMe);
+        $owedToMe = $reports->openDebts($this->signInDemoUser(), DebtDirection::OwedToMe);
 
         $this->assertSame([['خالد', 100.0, 400.0]], array_map(
             fn (array $debt): array => [$debt['counterparty'], $debt['repaid'], $debt['remaining']],
@@ -64,7 +71,7 @@ class DemoDataSeederTest extends TestCase
         $this->seed(DemoDataSeeder::class);
         $this->seed(DemoDataSeeder::class);
 
-        $this->assertSame(11, $this->demoUser()->transactions()->count());
+        $this->assertSame(11, $this->signInDemoUser()->transactions()->count());
     }
 
     public function test_uses_an_existing_demo_user_instead_of_creating_another(): void
@@ -73,7 +80,7 @@ class DemoDataSeederTest extends TestCase
 
         $this->seed(DemoDataSeeder::class);
 
-        $this->assertTrue($this->demoUser()->is($existing));
+        $this->assertTrue($this->signInDemoUser()->is($existing));
         $this->assertSame(11, $existing->transactions()->count());
     }
 
@@ -83,6 +90,6 @@ class DemoDataSeederTest extends TestCase
         $this->seed(DatabaseSeeder::class);
 
         $this->assertDatabaseCount('users', 1);
-        $this->assertSame(11, $this->demoUser()->transactions()->count());
+        $this->assertSame(11, $this->signInDemoUser()->transactions()->count());
     }
 }

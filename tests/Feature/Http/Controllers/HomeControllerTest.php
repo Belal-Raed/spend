@@ -5,7 +5,6 @@ namespace Tests\Feature\Http\Controllers;
 use App\Enums\DebtDirection;
 use App\Models\Transaction;
 use App\Models\User;
-use App\Services\TransactionService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Inertia\Testing\AssertableInertia as Assert;
 use Tests\TestCase;
@@ -96,7 +95,7 @@ class HomeControllerTest extends TestCase
         $user = User::factory()->create();
         $partlyPaid = $this->debt($user, DebtDirection::OwedByMe, '400.00', 'خالد');
         $this->debt($user, DebtDirection::OwedToMe, '150.00', 'سامي');
-        app(TransactionService::class)->repayDebt($partlyPaid, ['amount' => '100.00']);
+        $this->repayAsOwner($partlyPaid, ['amount' => '100.00']);
 
         $this->actingAs($user)
             ->get(route('home'))
@@ -114,7 +113,7 @@ class HomeControllerTest extends TestCase
     {
         $user = User::factory()->create();
         $settled = $this->debt($user, DebtDirection::OwedToMe, '150.00', 'سامي');
-        app(TransactionService::class)->repayDebt($settled);
+        $this->repayAsOwner($settled);
 
         $this->actingAs($user)
             ->get(route('home'))
