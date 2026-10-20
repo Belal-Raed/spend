@@ -46,6 +46,7 @@ export default function Page({
     children: ReactNode;
 }) {
     const path = usePage().url.split(/[?#]/)[0];
+    const scrollArea = useRef<HTMLDivElement>(null);
     const navBar = useRef<HTMLElement>(null);
     const scrollSentinel = useRef<HTMLDivElement>(null);
     const [isScrolled, setIsScrolled] = useState(false);
@@ -53,11 +54,12 @@ export default function Page({
     // Once the top of the page scrolls under the navigation bar, the bar turns
     // translucent and shows the page title in small, as on iOS.
     useEffect(() => {
-        if (!navBar.current || !scrollSentinel.current) {
+        if (!scrollArea.current || !navBar.current || !scrollSentinel.current) {
             return;
         }
 
         const observer = new IntersectionObserver(([entry]) => setIsScrolled(!entry.isIntersecting), {
+            root: scrollArea.current,
             rootMargin: `-${navBar.current.offsetHeight}px 0px 0px 0px`,
         });
         observer.observe(scrollSentinel.current);
@@ -65,11 +67,14 @@ export default function Page({
         return () => observer.disconnect();
     }, []);
 
+    // The screen itself never scrolls: this area does, with the bars stuck to
+    // its top and bottom. Mobile browsers move or hide fixed bars while the
+    // page scrolls, but they leave sticky ones inside a scrolling area alone.
     return (
-        <>
+        <div ref={scrollArea} scroll-region="" className="flex h-dvh flex-col overflow-y-auto overscroll-contain">
             <Head title={title} />
 
-            <div className="mx-auto flex min-h-dvh max-w-lg flex-col">
+            <div className="mx-auto flex w-full max-w-lg flex-1 flex-col">
                 <header
                     ref={navBar}
                     data-scrolled={isScrolled || undefined}
@@ -134,7 +139,7 @@ export default function Page({
                 <main
                     className={cx(
                         'flex flex-1 flex-col gap-7 px-4',
-                        modal ? 'pt-5 pb-[calc(env(safe-area-inset-bottom)+2.5rem)]' : 'pt-2 pb-[calc(env(safe-area-inset-bottom)+6rem)]',
+                        modal ? 'pt-5 pb-[calc(env(safe-area-inset-bottom)+2.5rem)]' : 'pt-2 pb-8',
                     )}
                 >
                     {modal && <h1 className="sr-only">{title}</h1>}
@@ -145,7 +150,7 @@ export default function Page({
             <Toast />
 
             {!modal && (
-                <nav className="fixed inset-x-0 bottom-0 z-20 border-t-[0.5px] border-separator bg-bar backdrop-blur-xl select-none" aria-label="التنقل الرئيسي">
+                <nav className="sticky bottom-0 z-20 border-t-[0.5px] border-separator bg-bar backdrop-blur-xl select-none" aria-label="التنقل الرئيسي">
                     <div className="mx-auto grid max-w-lg grid-cols-4 pb-[max(env(safe-area-inset-bottom),0.375rem)]">
                         {tabs.map((tab) => {
                             const isActive = tab.activeOn.test(path);
@@ -166,6 +171,6 @@ export default function Page({
                     </div>
                 </nav>
             )}
-        </>
+        </div>
     );
 }

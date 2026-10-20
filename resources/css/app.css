@@ -99,6 +99,12 @@
 }
 
 @layer base {
+    /* The screens scroll inside their own area, so the page itself never bounces or pulls to refresh. */
+    html,
+    body {
+        overscroll-behavior: none;
+    }
+
     html {
         -webkit-tap-highlight-color: transparent;
         -webkit-text-size-adjust: 100%;
