@@ -54,7 +54,12 @@ class DemoDataSeeder extends Seeder
         $this->call(DefaultCategoriesSeeder::class);
 
         $user = User::query()->where('phone', self::PHONE)->first()
-            ?? User::factory()->create(['name' => 'Test User', 'phone' => self::PHONE]);
+            ?? User::factory()->create([
+                'name' => 'Test User',
+                'phone' => self::PHONE,
+                // Set here because DatabaseSeeder runs without the model events that start a trial.
+                'trial_ends_at' => now()->addDays(config('subscriptions.trial_days')),
+            ]);
 
         $tenant->runAs($user, function () use ($user, $transactions): void {
             if (! $user->transactions()->exists()) {

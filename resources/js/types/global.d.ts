@@ -1,4 +1,4 @@
-import type { User } from '@/types';
+import type { Access, User } from '@/types';
 
 declare module '@inertiajs/core' {
     export interface InertiaConfig {
@@ -10,6 +10,8 @@ declare module '@inertiajs/core' {
             auth: {
                 user: User | null;
             };
+            /** Null for guests. */
+            access: Access | null;
             /** Today's date (Y-m-d) in the app's timezone. */
             today: string;
         };

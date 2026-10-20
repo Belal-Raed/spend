@@ -16,6 +16,7 @@ class DatabaseSeeder extends Seeder
     {
         $this->call([
             DefaultCategoriesSeeder::class,
+            PlanSeeder::class,
             DemoDataSeeder::class,
         ]);
     }
