@@ -233,7 +233,7 @@ class TransactionServiceTest extends TestCase
 
     public function test_deletes_transaction(): void
     {
-        $expense = Transaction::factory()->create();
+        $expense = Transaction::factory()->for($this->signIn())->create();
 
         $this->service()->delete($expense);
 
@@ -242,17 +242,17 @@ class TransactionServiceTest extends TestCase
 
     public function test_latest_returns_most_recently_recorded_transaction_of_the_user(): void
     {
-        $user = User::factory()->create();
+        Transaction::factory()->create();
+        $user = $this->signIn();
         Transaction::factory()->for($user)->create(['occurred_on' => '2026-10-11']);
         $latest = Transaction::factory()->for($user)->create(['occurred_on' => '2026-10-01']);
-        Transaction::factory()->create();
 
         $this->assertTrue($latest->is($this->service()->latest($user)));
     }
 
     public function test_latest_filters_by_type(): void
     {
-        $user = User::factory()->create();
+        $user = $this->signIn();
         $expense = Transaction::factory()->for($user)->create();
         Transaction::factory()->for($user)->income()->create();
 
@@ -261,7 +261,7 @@ class TransactionServiceTest extends TestCase
 
     public function test_partial_payment_of_debt_owed_to_me_is_income_and_keeps_debt_open(): void
     {
-        $user = User::factory()->create();
+        $user = $this->signIn();
         $debt = $this->debt($user, DebtDirection::OwedToMe, '100.00');
 
         $payment = $this->service()->repayDebt($debt, ['amount' => 40, 'occurred_on' => '2026-10-05']);
@@ -276,7 +276,7 @@ class TransactionServiceTest extends TestCase
 
     public function test_payment_of_debt_owed_by_me_is_expense(): void
     {
-        $debt = $this->debt(User::factory()->create(), DebtDirection::OwedByMe, '100.00');
+        $debt = $this->debt($this->signIn(), DebtDirection::OwedByMe, '100.00');
 
         $payment = $this->service()->repayDebt($debt, ['amount' => 30]);
 
@@ -285,7 +285,7 @@ class TransactionServiceTest extends TestCase
 
     public function test_payments_that_reach_the_full_amount_settle_debt_on_last_payment_date(): void
     {
-        $debt = $this->debt(User::factory()->create(), DebtDirection::OwedToMe, '100.00');
+        $debt = $this->debt($this->signIn(), DebtDirection::OwedToMe, '100.00');
 
         $this->service()->repayDebt($debt, ['amount' => 40, 'occurred_on' => '2026-10-05']);
         $this->service()->repayDebt($debt, ['amount' => 60, 'occurred_on' => '2026-10-09']);
@@ -295,7 +295,7 @@ class TransactionServiceTest extends TestCase
 
     public function test_payment_without_amount_pays_off_what_is_left(): void
     {
-        $debt = $this->debt(User::factory()->create(), DebtDirection::OwedByMe, '100.00');
+        $debt = $this->debt($this->signIn(), DebtDirection::OwedByMe, '100.00');
         $this->service()->repayDebt($debt, ['amount' => 25.5]);
 
         $payment = $this->service()->repayDebt($debt);
@@ -306,7 +306,7 @@ class TransactionServiceTest extends TestCase
 
     public function test_rejects_payment_above_what_is_left(): void
     {
-        $debt = $this->debt(User::factory()->create(), DebtDirection::OwedToMe, '100.00');
+        $debt = $this->debt($this->signIn(), DebtDirection::OwedToMe, '100.00');
         $this->service()->repayDebt($debt, ['amount' => 70]);
 
         $errors = $this->validationErrors(fn () => $this->service()->repayDebt($debt, ['amount' => 30.01]));
@@ -317,7 +317,7 @@ class TransactionServiceTest extends TestCase
 
     public function test_rejects_payment_on_settled_debt(): void
     {
-        $debt = $this->debt(User::factory()->create(), DebtDirection::OwedToMe, '100.00');
+        $debt = $this->debt($this->signIn(), DebtDirection::OwedToMe, '100.00');
         $this->service()->repayDebt($debt);
 
         $errors = $this->validationErrors(fn () => $this->service()->repayDebt($debt, ['amount' => 1]));
@@ -334,7 +334,7 @@ class TransactionServiceTest extends TestCase
 
     public function test_deleting_payment_reopens_settled_debt(): void
     {
-        $debt = $this->debt(User::factory()->create(), DebtDirection::OwedToMe, '100.00');
+        $debt = $this->debt($this->signIn(), DebtDirection::OwedToMe, '100.00');
         $this->service()->repayDebt($debt, ['amount' => 40]);
         $lastPayment = $this->service()->repayDebt($debt);
 
@@ -346,7 +346,7 @@ class TransactionServiceTest extends TestCase
 
     public function test_deleting_debt_deletes_its_payments(): void
     {
-        $debt = $this->debt(User::factory()->create(), DebtDirection::OwedToMe, '100.00');
+        $debt = $this->debt($this->signIn(), DebtDirection::OwedToMe, '100.00');
         $payment = $this->service()->repayDebt($debt, ['amount' => 40]);
 
         $this->service()->delete($debt);
@@ -357,7 +357,7 @@ class TransactionServiceTest extends TestCase
 
     public function test_raising_debt_amount_reopens_settled_debt(): void
     {
-        $debt = $this->debt(User::factory()->create(), DebtDirection::OwedToMe, '100.00');
+        $debt = $this->debt($this->signIn(), DebtDirection::OwedToMe, '100.00');
         $this->service()->repayDebt($debt);
 
         $this->service()->update($debt, ['amount' => 150]);
@@ -368,7 +368,7 @@ class TransactionServiceTest extends TestCase
 
     public function test_lowering_debt_to_what_was_paid_settles_it(): void
     {
-        $debt = $this->debt(User::factory()->create(), DebtDirection::OwedToMe, '100.00');
+        $debt = $this->debt($this->signIn(), DebtDirection::OwedToMe, '100.00');
         $this->service()->repayDebt($debt, ['amount' => 40, 'occurred_on' => '2026-10-05']);
 
         $this->service()->update($debt, ['amount' => 40]);
@@ -378,7 +378,7 @@ class TransactionServiceTest extends TestCase
 
     public function test_rejects_lowering_debt_below_what_was_paid(): void
     {
-        $debt = $this->debt(User::factory()->create(), DebtDirection::OwedToMe, '100.00');
+        $debt = $this->debt($this->signIn(), DebtDirection::OwedToMe, '100.00');
         $this->service()->repayDebt($debt, ['amount' => 40]);
 
         $errors = $this->validationErrors(fn () => $this->service()->update($debt, ['amount' => 39.99]));
@@ -389,7 +389,7 @@ class TransactionServiceTest extends TestCase
 
     public function test_raising_payment_to_what_is_left_settles_debt(): void
     {
-        $debt = $this->debt(User::factory()->create(), DebtDirection::OwedToMe, '100.00');
+        $debt = $this->debt($this->signIn(), DebtDirection::OwedToMe, '100.00');
         $payment = $this->service()->repayDebt($debt, ['amount' => 40]);
 
         $this->service()->update($payment, ['amount' => 100]);
@@ -399,7 +399,7 @@ class TransactionServiceTest extends TestCase
 
     public function test_rejects_raising_payment_above_what_is_left(): void
     {
-        $debt = $this->debt(User::factory()->create(), DebtDirection::OwedToMe, '100.00');
+        $debt = $this->debt($this->signIn(), DebtDirection::OwedToMe, '100.00');
         $payment = $this->service()->repayDebt($debt, ['amount' => 40]);
         $this->service()->repayDebt($debt, ['amount' => 50]);
 
@@ -410,7 +410,7 @@ class TransactionServiceTest extends TestCase
 
     public function test_rejects_category_on_payment(): void
     {
-        $debt = $this->debt(User::factory()->create(), DebtDirection::OwedByMe, '100.00');
+        $debt = $this->debt($this->signIn(), DebtDirection::OwedByMe, '100.00');
         $payment = $this->service()->repayDebt($debt, ['amount' => 40]);
 
         $errors = $this->validationErrors(fn () => $this->service()->update($payment, [

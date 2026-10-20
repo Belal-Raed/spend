@@ -7,7 +7,6 @@ use App\Enums\TransactionType;
 use App\Models\Category;
 use App\Models\Transaction;
 use App\Models\User;
-use App\Services\TransactionService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Inertia\Testing\AssertableInertia as Assert;
 use Tests\TestCase;
@@ -105,7 +104,7 @@ class TransactionControllerTest extends TestCase
         $debt = Transaction::factory()->for($user)->debt(DebtDirection::OwedToMe)->create([
             'amount' => '200.00', 'counterparty' => 'سامي', 'occurred_on' => '2026-10-02',
         ]);
-        app(TransactionService::class)->repayDebt($debt, ['occurred_on' => '2026-10-05']);
+        $this->repayAsOwner($debt, ['occurred_on' => '2026-10-05']);
 
         $this->actingAs($user)
             ->get(route('transactions.index'))
@@ -353,7 +352,7 @@ class TransactionControllerTest extends TestCase
         ]));
 
         $this->assertSame(1, $user->transactions()->count());
-        $this->assertSame(0, $otherUser->transactions()->count());
+        $this->assertDatabaseMissing('transactions', ['user_id' => $otherUser->id]);
     }
 
     public function test_empty_form_is_rejected_with_a_message_for_each_field(): void
@@ -438,20 +437,20 @@ class TransactionControllerTest extends TestCase
                 ->where('transaction.category', $transaction->category->name));
     }
 
-    public function test_another_user_is_forbidden_from_the_edit_form(): void
+    public function test_another_user_gets_not_found_from_the_edit_form(): void
     {
         $transaction = Transaction::factory()->create();
 
         $this->actingAs(User::factory()->create())
             ->get(route('transactions.edit', $transaction))
-            ->assertForbidden();
+            ->assertNotFound();
     }
 
     public function test_edit_form_for_a_debt_payment_offers_no_category(): void
     {
         $user = User::factory()->create();
         Category::factory()->create();
-        $repayment = app(TransactionService::class)->repayDebt($this->debt($user), ['amount' => '100']);
+        $repayment = $this->repayAsOwner($this->debt($user), ['amount' => '100']);
 
         $this->actingAs($user)
             ->get(route('transactions.edit', $repayment))
@@ -486,7 +485,7 @@ class TransactionControllerTest extends TestCase
         $this->assertSame('عشاء', $transaction->note);
     }
 
-    public function test_another_user_is_forbidden_from_changing_a_transaction(): void
+    public function test_another_user_gets_not_found_from_changing_a_transaction(): void
     {
         $transaction = Transaction::factory()->create(['amount' => '45.50']);
 
@@ -496,7 +495,7 @@ class TransactionControllerTest extends TestCase
                 'category_id' => $transaction->category_id,
                 'occurred_on' => '2026-10-02',
             ])
-            ->assertForbidden();
+            ->assertNotFound();
 
         $this->assertSame('45.50', $transaction->refresh()->amount);
     }
@@ -536,7 +535,7 @@ class TransactionControllerTest extends TestCase
     {
         $user = User::factory()->create();
         $debt = $this->debt($user, '500.00');
-        app(TransactionService::class)->repayDebt($debt, ['amount' => '200']);
+        $this->repayAsOwner($debt, ['amount' => '200']);
 
         $this->actingAs($user)
             ->put(route('transactions.update', $debt), ['amount' => '150', 'counterparty' => 'خالد', 'occurred_on' => '2026-10-02'])
@@ -548,7 +547,7 @@ class TransactionControllerTest extends TestCase
     public function test_debt_payment_cannot_grow_beyond_what_is_left_on_the_debt(): void
     {
         $user = User::factory()->create();
-        $repayment = app(TransactionService::class)->repayDebt($this->debt($user, '500.00'), ['amount' => '200']);
+        $repayment = $this->repayAsOwner($this->debt($user, '500.00'), ['amount' => '200']);
 
         $this->actingAs($user)
             ->put(route('transactions.update', $repayment), ['amount' => '500.01', 'occurred_on' => '2026-10-02'])
@@ -561,7 +560,7 @@ class TransactionControllerTest extends TestCase
     {
         $user = User::factory()->create();
         $debt = $this->debt($user, '500.00');
-        $repayment = app(TransactionService::class)->repayDebt($debt, ['amount' => '200']);
+        $repayment = $this->repayAsOwner($debt, ['amount' => '200']);
 
         $this->actingAs($user)
             ->put(route('transactions.update', $repayment), ['amount' => '500', 'occurred_on' => '2026-10-02'])
@@ -585,13 +584,13 @@ class TransactionControllerTest extends TestCase
         $this->assertModelMissing($transaction);
     }
 
-    public function test_another_user_is_forbidden_from_deleting_a_transaction(): void
+    public function test_another_user_gets_not_found_from_deleting_a_transaction(): void
     {
         $transaction = Transaction::factory()->create();
 
         $this->actingAs(User::factory()->create())
             ->delete(route('transactions.destroy', $transaction))
-            ->assertForbidden();
+            ->assertNotFound();
 
         $this->assertModelExists($transaction);
     }
@@ -600,7 +599,7 @@ class TransactionControllerTest extends TestCase
     {
         $user = User::factory()->create();
         $debt = $this->debt($user);
-        $repayment = app(TransactionService::class)->repayDebt($debt, ['amount' => '100']);
+        $repayment = $this->repayAsOwner($debt, ['amount' => '100']);
 
         $this->actingAs($user)->delete(route('transactions.destroy', $debt));
 

@@ -6,6 +6,7 @@ use App\Enums\DebtDirection;
 use App\Enums\TransactionType;
 use App\Models\Category;
 use App\Models\User;
+use App\Services\CurrentTenant;
 use App\Services\TransactionService;
 use Illuminate\Database\Seeder;
 
@@ -48,17 +49,22 @@ class DemoDataSeeder extends Seeder
      *
      * Safe to run more than once: a demo user who already has transactions is left alone.
      */
-    public function run(TransactionService $transactions): void
+    public function run(CurrentTenant $tenant, TransactionService $transactions): void
     {
         $this->call(DefaultCategoriesSeeder::class);
 
         $user = User::query()->where('phone', self::PHONE)->first()
             ?? User::factory()->create(['name' => 'Test User', 'phone' => self::PHONE]);
 
-        if ($user->transactions()->exists()) {
-            return;
-        }
+        $tenant->runAs($user, function () use ($user, $transactions): void {
+            if (! $user->transactions()->exists()) {
+                $this->recordTransactions($user, $transactions);
+            }
+        });
+    }
 
+    private function recordTransactions(User $user, TransactionService $transactions): void
+    {
         foreach (self::TRANSACTIONS as $type => $rows) {
             foreach ($rows as [$category, $amount, $note, $daysAgo]) {
                 $transactions->record($user, [

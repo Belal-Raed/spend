@@ -10,7 +10,6 @@ use App\Http\Resources\CategoryResource;
 use App\Http\Resources\TransactionResource;
 use App\Models\Category;
 use App\Models\Transaction;
-use App\Models\User;
 use App\Services\TransactionService;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\RedirectResponse;
@@ -34,7 +33,7 @@ class TransactionController extends Controller
     {
         $user = $request->user();
         $period = Period::tryFrom((string) $request->query('period'));
-        $category = Category::query()->visibleTo($user)->find($request->integer('category'));
+        $category = Category::query()->find($request->integer('category'));
 
         $transactions = $user->transactions()
             ->with('category:id,name')
@@ -55,7 +54,6 @@ class TransactionController extends Controller
             'periods' => array_map(fn (Period $option): array => ['value' => $option->value, 'label' => $option->label()], Period::cases()),
             'category' => $category?->id,
             'categoryGroups' => Category::query()
-                ->visibleTo($user)
                 ->inDisplayOrder()
                 ->get()
                 ->groupBy('type')
@@ -77,7 +75,7 @@ class TransactionController extends Controller
         return Inertia::render('transactions/create', [
             'type' => $type->value,
             'types' => array_map(fn (TransactionType $option): array => ['value' => $option->value, 'label' => $option->label()], TransactionType::cases()),
-            'categories' => CategoryResource::collection($this->selectableCategories($request->user(), $type)),
+            'categories' => CategoryResource::collection($this->selectableCategories($type)),
         ]);
     }
 
@@ -90,7 +88,7 @@ class TransactionController extends Controller
         return redirect()->route('transactions.index');
     }
 
-    public function edit(Request $request, Transaction $transaction): Response
+    public function edit(Transaction $transaction): Response
     {
         Gate::authorize('update', $transaction);
 
@@ -99,7 +97,7 @@ class TransactionController extends Controller
         return Inertia::render('transactions/edit', [
             'transaction' => new TransactionResource($transaction),
             'categories' => CategoryResource::collection(
-                $transaction->isGroupedByCategory() ? $this->selectableCategories($request->user(), $transaction->type) : new Collection,
+                $transaction->isGroupedByCategory() ? $this->selectableCategories($transaction->type) : new Collection,
             ),
         ]);
     }
@@ -130,12 +128,12 @@ class TransactionController extends Controller
     /**
      * @return Collection<int, Category>
      */
-    private function selectableCategories(User $user, TransactionType $type): Collection
+    private function selectableCategories(TransactionType $type): Collection
     {
         if (! $type->hasCategory()) {
             return new Collection;
         }
 
-        return Category::query()->visibleTo($user)->ofType($type)->inDisplayOrder()->get();
+        return Category::query()->ofType($type)->inDisplayOrder()->get();
     }
 }

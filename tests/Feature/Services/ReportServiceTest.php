@@ -34,7 +34,7 @@ class ReportServiceTest extends TestCase
 
     public function test_balance_is_income_minus_expenses(): void
     {
-        $user = User::factory()->create();
+        $user = $this->signIn();
         Transaction::factory()->for($user)->income()->create(['amount' => '1000.00']);
         Transaction::factory()->for($user)->create(['amount' => '250.25']);
         Transaction::factory()->for($user)->create(['amount' => '49.75']);
@@ -47,7 +47,7 @@ class ReportServiceTest extends TestCase
 
     public function test_lending_lowers_cash_but_not_balance_after_debts(): void
     {
-        $user = User::factory()->create();
+        $user = $this->signIn();
         $this->debt($user, DebtDirection::OwedToMe, '100.00');
 
         $this->assertSame(
@@ -58,7 +58,7 @@ class ReportServiceTest extends TestCase
 
     public function test_borrowing_raises_cash_but_not_balance_after_debts(): void
     {
-        $user = User::factory()->create();
+        $user = $this->signIn();
         $this->debt($user, DebtDirection::OwedByMe, '100.00');
 
         $this->assertSame(
@@ -69,7 +69,7 @@ class ReportServiceTest extends TestCase
 
     public function test_partial_payment_counts_only_what_is_left_of_the_debt(): void
     {
-        $user = User::factory()->create();
+        $user = $this->signIn();
         $debt = $this->debt($user, DebtDirection::OwedToMe, '100.00');
         $this->transactions()->repayDebt($debt, ['amount' => 40]);
 
@@ -81,7 +81,7 @@ class ReportServiceTest extends TestCase
 
     public function test_settled_debts_no_longer_count_against_balance_after_debts(): void
     {
-        $user = User::factory()->create();
+        $user = $this->signIn();
         $this->transactions()->repayDebt($this->debt($user, DebtDirection::OwedByMe, '100.00'));
 
         $this->assertSame(
@@ -92,9 +92,9 @@ class ReportServiceTest extends TestCase
 
     public function test_balance_ignores_other_users(): void
     {
-        $user = User::factory()->create();
         Transaction::factory()->income()->create(['amount' => '500.00']);
         $this->debt(User::factory()->create(), DebtDirection::OwedToMe, '100.00');
+        $user = $this->signIn();
 
         $this->assertSame(0.0, $this->reports()->balance($user)['after_debts']);
         $this->assertSame(0.0, $this->reports()->balance($user)['owed_to_me']);
@@ -102,7 +102,7 @@ class ReportServiceTest extends TestCase
 
     public function test_summary_breaks_expenses_down_by_category_largest_first(): void
     {
-        $user = User::factory()->create();
+        $user = $this->signIn();
         $food = Category::factory()->create(['name' => 'أكل']);
         $home = Category::factory()->create(['name' => 'بيت']);
         Transaction::factory()->for($user)->for($food)->create(['amount' => '5.00', 'occurred_on' => '2026-10-01']);
@@ -126,7 +126,7 @@ class ReportServiceTest extends TestCase
 
     public function test_summary_excludes_days_outside_the_range(): void
     {
-        $user = User::factory()->create();
+        $user = $this->signIn();
         Transaction::factory()->for($user)->create(['amount' => '7.00', 'occurred_on' => '2026-09-30']);
         Transaction::factory()->for($user)->create(['amount' => '9.00', 'occurred_on' => '2026-11-01']);
 
@@ -138,7 +138,7 @@ class ReportServiceTest extends TestCase
 
     public function test_summary_includes_debt_payments_made_as_uncategorized_expenses(): void
     {
-        $user = User::factory()->create();
+        $user = $this->signIn();
         $this->transactions()->repayDebt(
             $this->debt($user, DebtDirection::OwedByMe, '30.00'),
             ['occurred_on' => '2026-10-05'],
@@ -155,7 +155,7 @@ class ReportServiceTest extends TestCase
 
     public function test_summary_can_be_limited_to_one_category(): void
     {
-        $user = User::factory()->create();
+        $user = $this->signIn();
         $food = Category::factory()->create();
         Transaction::factory()->for($user)->for($food)->create(['amount' => '5.00', 'occurred_on' => '2026-10-02']);
         Transaction::factory()->for($user)->create(['amount' => '60.00', 'occurred_on' => '2026-10-02']);
@@ -168,8 +168,8 @@ class ReportServiceTest extends TestCase
 
     public function test_summary_ignores_other_users(): void
     {
-        $user = User::factory()->create();
         Transaction::factory()->create(['amount' => '60.00', 'occurred_on' => '2026-10-02']);
+        $user = $this->signIn();
 
         $summary = $this->reports()->summary($user, Carbon::parse('2026-10-01'), Carbon::parse('2026-10-31'));
 
@@ -178,7 +178,7 @@ class ReportServiceTest extends TestCase
 
     public function test_summary_for_period_uses_the_period_range(): void
     {
-        $user = User::factory()->create();
+        $user = $this->signIn();
         Transaction::factory()->for($user)->create(['amount' => '10.00', 'occurred_on' => '2026-10-10']);
         Transaction::factory()->for($user)->create(['amount' => '4.00', 'occurred_on' => '2026-10-11']);
 
@@ -190,7 +190,7 @@ class ReportServiceTest extends TestCase
 
     public function test_open_debts_lists_what_is_left_oldest_first(): void
     {
-        $user = User::factory()->create();
+        $user = $this->signIn();
         $newer = Transaction::factory()->for($user)->debt(DebtDirection::OwedByMe)
             ->create(['amount' => '50.00', 'counterparty' => 'سامي', 'occurred_on' => '2026-10-08']);
         $older = Transaction::factory()->for($user)->debt(DebtDirection::OwedToMe)
@@ -224,7 +224,7 @@ class ReportServiceTest extends TestCase
 
     public function test_open_debts_can_be_limited_to_one_direction(): void
     {
-        $user = User::factory()->create();
+        $user = $this->signIn();
         $this->debt($user, DebtDirection::OwedByMe, '50.00');
         $owedToMe = $this->debt($user, DebtDirection::OwedToMe, '20.00');
 

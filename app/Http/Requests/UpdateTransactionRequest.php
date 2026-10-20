@@ -123,7 +123,6 @@ class UpdateTransactionRequest extends FormRequest
     private function selectableCategoryIds(): array
     {
         return Category::query()
-            ->visibleTo($this->user())
             ->ofType($this->transaction()->type)
             ->pluck('id')
             ->all();

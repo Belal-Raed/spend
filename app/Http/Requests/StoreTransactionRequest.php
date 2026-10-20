@@ -78,6 +78,6 @@ class StoreTransactionRequest extends FormRequest
             return [];
         }
 
-        return Category::query()->visibleTo($this->user())->ofType($type)->pluck('id')->all();
+        return Category::query()->ofType($type)->pluck('id')->all();
     }
 }

@@ -203,13 +203,13 @@ class CategoryControllerTest extends TestCase
                 ->where('typeLabel', 'مصروف'));
     }
 
-    public function test_another_user_is_forbidden_from_the_edit_form(): void
+    public function test_another_user_gets_not_found_from_the_edit_form(): void
     {
         $category = Category::factory()->ownedBy(User::factory()->create())->create();
 
         $this->actingAs(User::factory()->create())
             ->get(route('categories.edit', $category))
-            ->assertForbidden();
+            ->assertNotFound();
     }
 
     public function test_edit_form_is_forbidden_for_a_default_category(): void
@@ -279,13 +279,13 @@ class CategoryControllerTest extends TestCase
         $this->assertSame('أقساط', $category->refresh()->name);
     }
 
-    public function test_another_user_is_forbidden_from_renaming_a_category(): void
+    public function test_another_user_gets_not_found_from_renaming_a_category(): void
     {
         $category = Category::factory()->ownedBy(User::factory()->create())->create(['name' => 'أقساط']);
 
         $this->actingAs(User::factory()->create())
             ->put(route('categories.update', $category), ['name' => 'مسروق'])
-            ->assertForbidden();
+            ->assertNotFound();
 
         $this->assertSame('أقساط', $category->refresh()->name);
     }
@@ -347,13 +347,13 @@ class CategoryControllerTest extends TestCase
                 ->where('errors.category', fn (string $message) => str_starts_with($message, 'لا يمكن حذف «أقساط» لأنه مستخدم في 1 حركة.')));
     }
 
-    public function test_another_user_is_forbidden_from_deleting_a_category(): void
+    public function test_another_user_gets_not_found_from_deleting_a_category(): void
     {
         $category = Category::factory()->ownedBy(User::factory()->create())->create();
 
         $this->actingAs(User::factory()->create())
             ->delete(route('categories.destroy', $category))
-            ->assertForbidden();
+            ->assertNotFound();
 
         $this->assertModelExists($category);
     }
