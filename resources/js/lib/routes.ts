@@ -7,6 +7,7 @@ export const routes = {
     register: () => '/register',
     logout: () => '/logout',
     settings: () => '/settings',
+    export: () => '/export',
 
     transactions: {
         index: () => '/transactions',

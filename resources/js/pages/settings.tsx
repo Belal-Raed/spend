@@ -65,6 +65,12 @@ export default function Settings({ customCategoriesCount }: { customCategoriesCo
                 </Row>
             </Group>
 
+            <Group footer="ملف CSV فيه كل حركاتك، يفتح في Excel.">
+                <Row href={routes.export()} download icon="download" tone="bg-positive">
+                    تصدير بياناتي
+                </Row>
+            </Group>
+
             <Group>
                 <Row onClick={() => setIsLogoutSheetOpen(true)} destructive chevron={false}>
                     <span className="text-center">تسجيل الخروج</span>
