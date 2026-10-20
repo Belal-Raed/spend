@@ -7,6 +7,7 @@ use App\Models\Category;
 use App\Models\Transaction;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Inertia\Testing\AssertableInertia as Assert;
 use Tests\TestCase;
 
 class CategoryControllerTest extends TestCase
@@ -31,12 +32,18 @@ class CategoryControllerTest extends TestCase
         $this->actingAs($user)
             ->get(route('categories.index'))
             ->assertOk()
-            ->assertSeeTextInOrder([
-                'تصنيفات المصاريف', 'مواصلات', 'افتراضي', 'أقساط',
-                'تصنيفات القبض', 'راتب', 'افتراضي', 'إيجار محل',
-            ])
-            ->assertSee(route('categories.edit', $installments), escape: false)
-            ->assertSee(route('categories.edit', $shopRent), escape: false);
+            ->assertInertia(fn (Assert $page) => $page
+                ->component('categories/index')
+                ->has('categories.expense', 2)
+                ->where('categories.expense.0.name', 'مواصلات')
+                ->where('categories.expense.0.is_default', true)
+                ->where('categories.expense.1.id', $installments->id)
+                ->where('categories.expense.1.is_default', false)
+                ->has('categories.income', 2)
+                ->where('categories.income.0.name', 'راتب')
+                ->where('categories.income.0.is_default', true)
+                ->where('categories.income.1.id', $shopRent->id)
+                ->where('categories.income.1.is_default', false));
     }
 
     public function test_lists_the_catch_all_default_after_the_other_defaults(): void
@@ -48,7 +55,10 @@ class CategoryControllerTest extends TestCase
 
         $this->actingAs($user)
             ->get(route('categories.index'))
-            ->assertSeeTextInOrder(['مواصلات', 'أخرى', 'أقساط']);
+            ->assertInertia(fn (Assert $page) => $page->where(
+                'categories.expense',
+                fn ($categories) => collect($categories)->pluck('name')->all() === ['مواصلات', 'أخرى', 'أقساط'],
+            ));
     }
 
     public function test_does_not_list_another_users_categories(): void
@@ -58,28 +68,17 @@ class CategoryControllerTest extends TestCase
         $this->actingAs(User::factory()->create())
             ->get(route('categories.index'))
             ->assertOk()
-            ->assertDontSeeText('تصنيف خاص');
+            ->assertInertia(fn (Assert $page) => $page->missing('categories.expense'));
     }
 
-    public function test_default_category_has_no_edit_or_delete_link(): void
-    {
-        $default = Category::factory()->create();
-
-        $this->actingAs(User::factory()->create())
-            ->get(route('categories.index'))
-            ->assertDontSee(route('categories.edit', $default), escape: false)
-            ->assertDontSee('name="_method" value="DELETE"', escape: false);
-    }
-
-    public function test_escapes_dangerous_content_in_a_category_name(): void
+    public function test_never_sends_the_page_a_raw_script_tag_from_a_category_name(): void
     {
         $user = User::factory()->create();
         Category::factory()->ownedBy($user)->create(['name' => "<script>alert('xss')</script>"]);
 
         $this->actingAs($user)
             ->get(route('categories.index'))
-            ->assertSee('&lt;script&gt;', escape: false)
-            ->assertDontSee("<script>alert('xss')</script>", escape: false);
+            ->assertDontSee('<script>alert', escape: false);
     }
 
     // Store
@@ -99,7 +98,7 @@ class CategoryControllerTest extends TestCase
         $this->actingAs($user)
             ->post(route('categories.store'), ['name' => 'أقساط', 'type' => 'expense'])
             ->assertRedirect(route('categories.index'))
-            ->assertSessionHas('status', 'تمت إضافة التصنيف.');
+            ->assertInertiaFlash('status', 'تمت إضافة التصنيف.');
 
         $category = $user->categories()->sole();
         $this->assertSame('أقساط', $category->name);
@@ -198,7 +197,10 @@ class CategoryControllerTest extends TestCase
         $this->actingAs($user)
             ->get(route('categories.edit', $category))
             ->assertOk()
-            ->assertSee('value="أقساط"', escape: false);
+            ->assertInertia(fn (Assert $page) => $page
+                ->component('categories/edit')
+                ->where('category.name', 'أقساط')
+                ->where('typeLabel', 'مصروف'));
     }
 
     public function test_another_user_is_forbidden_from_the_edit_form(): void
@@ -227,7 +229,7 @@ class CategoryControllerTest extends TestCase
         $this->actingAs($user)
             ->put(route('categories.update', $category), ['name' => 'أقساط السيارة'])
             ->assertRedirect(route('categories.index'))
-            ->assertSessionHas('status', 'تم تعديل التصنيف.');
+            ->assertInertiaFlash('status', 'تم تعديل التصنيف.');
 
         $this->assertSame('أقساط السيارة', $category->refresh()->name);
     }
@@ -309,7 +311,7 @@ class CategoryControllerTest extends TestCase
         $this->actingAs($user)
             ->delete(route('categories.destroy', $category))
             ->assertRedirect(route('categories.index'))
-            ->assertSessionHas('status', 'تم حذف التصنيف.');
+            ->assertInertiaFlash('status', 'تم حذف التصنيف.');
 
         $this->assertModelMissing($category);
     }
@@ -340,7 +342,9 @@ class CategoryControllerTest extends TestCase
             ->followingRedirects()
             ->delete(route('categories.destroy', $category))
             ->assertOk()
-            ->assertSeeText('لا يمكن حذف «أقساط» لأنه مستخدم في 1 حركة.');
+            ->assertInertia(fn (Assert $page) => $page
+                ->component('categories/index')
+                ->where('errors.category', fn (string $message) => str_starts_with($message, 'لا يمكن حذف «أقساط» لأنه مستخدم في 1 حركة.')));
     }
 
     public function test_another_user_is_forbidden_from_deleting_a_category(): void

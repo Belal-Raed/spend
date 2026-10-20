@@ -6,6 +6,8 @@ use App\Enums\Period;
 use App\Enums\TransactionType;
 use App\Http\Requests\StoreTransactionRequest;
 use App\Http\Requests\UpdateTransactionRequest;
+use App\Http\Resources\CategoryResource;
+use App\Http\Resources\TransactionResource;
 use App\Models\Category;
 use App\Models\Transaction;
 use App\Models\User;
@@ -14,7 +16,8 @@ use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
-use Illuminate\View\View;
+use Inertia\Inertia;
+use Inertia\Response;
 
 class TransactionController extends Controller
 {
@@ -27,7 +30,7 @@ class TransactionController extends Controller
      *
      * A period or category that does not exist is ignored.
      */
-    public function index(Request $request): View
+    public function index(Request $request): Response
     {
         $user = $request->user();
         $period = Period::tryFrom((string) $request->query('period'));
@@ -46,24 +49,35 @@ class TransactionController extends Controller
             ->simplePaginate(self::PER_PAGE)
             ->withQueryString();
 
-        return view('transactions.index', [
-            'transactions' => $transactions,
-            'period' => $period,
-            'category' => $category,
-            'categories' => Category::query()->visibleTo($user)->inDisplayOrder()->get()->groupBy('type'),
+        return Inertia::render('transactions/index', [
+            'transactions' => TransactionResource::collection($transactions),
+            'period' => $period?->value,
+            'periods' => array_map(fn (Period $option): array => ['value' => $option->value, 'label' => $option->label()], Period::cases()),
+            'category' => $category?->id,
+            'categoryGroups' => Category::query()
+                ->visibleTo($user)
+                ->inDisplayOrder()
+                ->get()
+                ->groupBy('type')
+                ->map(fn ($categoriesOfType, string $type): array => [
+                    'label' => TransactionType::from($type)->label(),
+                    'categories' => CategoryResource::collection($categoriesOfType),
+                ])
+                ->values(),
         ]);
     }
 
     /**
      * Show the form for a new expense, income or debt. Defaults to an expense.
      */
-    public function create(Request $request): View
+    public function create(Request $request): Response
     {
         $type = TransactionType::tryFrom((string) $request->query('type')) ?? TransactionType::Expense;
 
-        return view('transactions.create', [
-            'type' => $type,
-            'categories' => $this->selectableCategories($request->user(), $type),
+        return Inertia::render('transactions/create', [
+            'type' => $type->value,
+            'types' => array_map(fn (TransactionType $option): array => ['value' => $option->value, 'label' => $option->label()], TransactionType::cases()),
+            'categories' => CategoryResource::collection($this->selectableCategories($request->user(), $type)),
         ]);
     }
 
@@ -71,16 +85,22 @@ class TransactionController extends Controller
     {
         $this->transactions->record($request->user(), $request->validated());
 
-        return redirect()->route('transactions.index')->with('status', 'تم تسجيل الحركة.');
+        Inertia::flash('status', 'تم تسجيل الحركة.');
+
+        return redirect()->route('transactions.index');
     }
 
-    public function edit(Request $request, Transaction $transaction): View
+    public function edit(Request $request, Transaction $transaction): Response
     {
         Gate::authorize('update', $transaction);
 
-        return view('transactions.edit', [
-            'transaction' => $transaction,
-            'categories' => $this->selectableCategories($request->user(), $transaction->type),
+        $transaction->load('category:id,name');
+
+        return Inertia::render('transactions/edit', [
+            'transaction' => new TransactionResource($transaction),
+            'categories' => CategoryResource::collection(
+                $transaction->isGroupedByCategory() ? $this->selectableCategories($request->user(), $transaction->type) : new Collection,
+            ),
         ]);
     }
 
@@ -88,7 +108,9 @@ class TransactionController extends Controller
     {
         $this->transactions->update($transaction, $request->validated());
 
-        return redirect()->route('transactions.index')->with('status', 'تم تعديل الحركة.');
+        Inertia::flash('status', 'تم تعديل الحركة.');
+
+        return redirect()->route('transactions.index');
     }
 
     /**
@@ -100,7 +122,9 @@ class TransactionController extends Controller
 
         $this->transactions->delete($transaction);
 
-        return redirect()->route('transactions.index')->with('status', 'تم حذف الحركة.');
+        Inertia::flash('status', 'تم حذف الحركة.');
+
+        return redirect()->route('transactions.index');
     }
 
     /**

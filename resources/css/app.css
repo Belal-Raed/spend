@@ -1,8 +1,5 @@
 @import 'tailwindcss';
 
-@source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
-@source '../../storage/framework/views/*.php';
-
 @theme {
     /* The phone's own font: SF Arabic on an iPhone, the system font elsewhere. */
     --font-sans: system-ui, -apple-system, 'SF Arabic', 'Segoe UI', Tahoma, 'Noto Sans Arabic', sans-serif,
@@ -199,21 +196,15 @@
     }
 }
 
-/* Moving between pages fades the content while the bars stay put. */
-@view-transition {
-    navigation: auto;
-}
-
+/* Moving between pages fades the content (app.tsx starts the transition). */
 ::view-transition-old(root),
 ::view-transition-new(root) {
     animation-duration: 0.2s;
 }
 
 @media (prefers-reduced-motion: reduce) {
-    @view-transition {
-        navigation: none;
-    }
-
+    ::view-transition-old(root),
+    ::view-transition-new(root),
     .sheet[open],
     .sheet::backdrop,
     .toast {

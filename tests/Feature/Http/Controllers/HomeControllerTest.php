@@ -7,8 +7,12 @@ use App\Models\Transaction;
 use App\Models\User;
 use App\Services\TransactionService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Inertia\Testing\AssertableInertia as Assert;
 use Tests\TestCase;
 
+/**
+ * Amounts reach the page as JSON numbers, so a whole amount such as 400.00 arrives as 400.
+ */
 class HomeControllerTest extends TestCase
 {
     use RefreshDatabase;
@@ -26,35 +30,36 @@ class HomeControllerTest extends TestCase
         $this->get(route('home'))->assertRedirect(route('login'));
     }
 
-    public function test_signed_in_user_sees_their_name(): void
+    public function test_signed_in_user_gets_their_name(): void
     {
         $this->actingAs(User::factory()->create(['name' => 'أبو محمد']))
             ->get(route('home'))
             ->assertOk()
-            ->assertSeeText('أبو محمد');
+            ->assertInertia(fn (Assert $page) => $page
+                ->component('home')
+                ->where('auth.user.name', 'أبو محمد'));
     }
 
-    public function test_escapes_dangerous_content_in_the_user_name(): void
+    public function test_never_sends_the_page_a_raw_script_tag_from_the_user_name(): void
     {
         $this->actingAs(User::factory()->create(['name' => "<script>alert('xss')</script>"]))
             ->get(route('home'))
-            ->assertSee('&lt;script&gt;', escape: false)
-            ->assertDontSee("<script>alert('xss')</script>", escape: false);
+            ->assertDontSee('<script>alert', escape: false);
     }
 
-    public function test_new_user_sees_zero_totals_and_no_open_debts(): void
+    public function test_new_user_gets_zero_totals_and_no_open_debts(): void
     {
         $this->actingAs(User::factory()->create())
             ->get(route('home'))
             ->assertOk()
-            ->assertViewHas('balance', ['cash' => 0.0, 'owed_by_me' => 0.0, 'owed_to_me' => 0.0, 'after_debts' => 0.0])
-            ->assertViewHas('monthExpensesTotal', 0.0)
-            ->assertSeeText('ما عليك ديون مفتوحة.')
-            ->assertSeeText('ما إلك ديون مفتوحة.')
-            ->assertDontSeeText('-0.00');
+            ->assertInertia(fn (Assert $page) => $page
+                ->where('balance', ['cash' => 0, 'owed_by_me' => 0, 'owed_to_me' => 0, 'after_debts' => 0])
+                ->where('monthExpensesTotal', 0)
+                ->has('debtsOwedByMe', 0)
+                ->has('debtsOwedToMe', 0));
     }
 
-    public function test_shows_the_balance_before_and_after_open_debts(): void
+    public function test_gives_the_balance_before_and_after_open_debts(): void
     {
         $user = User::factory()->create();
         Transaction::factory()->for($user)->income()->create(['amount' => '3000.00']);
@@ -64,13 +69,12 @@ class HomeControllerTest extends TestCase
 
         $this->actingAs($user)
             ->get(route('home'))
-            ->assertViewHas('balance', [
+            ->assertInertia(fn (Assert $page) => $page->where('balance', [
                 'cash' => 1999.5,
-                'owed_by_me' => 400.0,
-                'owed_to_me' => 150.0,
+                'owed_by_me' => 400,
+                'owed_to_me' => 150,
                 'after_debts' => 1749.5,
-            ])
-            ->assertSeeTextInOrder(['1,999.50', '-400.00', '150.00', '1,749.50']);
+            ]));
     }
 
     public function test_month_total_counts_only_this_months_expenses(): void
@@ -84,8 +88,7 @@ class HomeControllerTest extends TestCase
 
         $this->actingAs($user)
             ->get(route('home'))
-            ->assertViewHas('monthExpensesTotal', 100.25)
-            ->assertSeeText('100.25');
+            ->assertInertia(fn (Assert $page) => $page->where('monthExpensesTotal', 100.25));
     }
 
     public function test_lists_open_debts_by_direction_with_what_is_left_on_each(): void
@@ -95,11 +98,16 @@ class HomeControllerTest extends TestCase
         $this->debt($user, DebtDirection::OwedToMe, '150.00', 'سامي');
         app(TransactionService::class)->repayDebt($partlyPaid, ['amount' => '100.00']);
 
-        $response = $this->actingAs($user)->get(route('home'));
-
-        $this->assertSame(['خالد'], array_column($response->viewData('debtsOwedByMe'), 'counterparty'));
-        $this->assertSame(['سامي'], array_column($response->viewData('debtsOwedToMe'), 'counterparty'));
-        $response->assertSeeTextInOrder(['ديون عليّ', 'خالد', '300.00', 'من أصل', '400.00', 'ديون إلي', 'سامي', '150.00']);
+        $this->actingAs($user)
+            ->get(route('home'))
+            ->assertInertia(fn (Assert $page) => $page
+                ->has('debtsOwedByMe', 1)
+                ->where('debtsOwedByMe.0.counterparty', 'خالد')
+                ->where('debtsOwedByMe.0.remaining', 300)
+                ->where('debtsOwedByMe.0.amount', 400)
+                ->has('debtsOwedToMe', 1)
+                ->where('debtsOwedToMe.0.counterparty', 'سامي')
+                ->where('debtsOwedToMe.0.remaining', 150));
     }
 
     public function test_does_not_list_a_debt_that_is_fully_paid(): void
@@ -110,8 +118,7 @@ class HomeControllerTest extends TestCase
 
         $this->actingAs($user)
             ->get(route('home'))
-            ->assertViewHas('debtsOwedToMe', [])
-            ->assertSeeText('ما إلك ديون مفتوحة.');
+            ->assertInertia(fn (Assert $page) => $page->has('debtsOwedToMe', 0));
     }
 
     public function test_does_not_show_another_users_transactions(): void
@@ -123,23 +130,24 @@ class HomeControllerTest extends TestCase
 
         $this->actingAs(User::factory()->create())
             ->get(route('home'))
-            ->assertViewHas('balance', ['cash' => 0.0, 'owed_by_me' => 0.0, 'owed_to_me' => 0.0, 'after_debts' => 0.0])
-            ->assertViewHas('monthExpensesTotal', 0.0)
-            ->assertDontSeeText('خالد');
+            ->assertInertia(fn (Assert $page) => $page
+                ->where('balance', ['cash' => 0, 'owed_by_me' => 0, 'owed_to_me' => 0, 'after_debts' => 0])
+                ->where('monthExpensesTotal', 0)
+                ->has('debtsOwedByMe', 0)
+                ->has('recentTransactions', 0));
     }
 
-    public function test_escapes_dangerous_content_in_a_debt_counterparty(): void
+    public function test_never_sends_the_page_a_raw_script_tag_from_a_debt_counterparty(): void
     {
         $user = User::factory()->create();
         $this->debt($user, DebtDirection::OwedToMe, '150.00', "<script>alert('xss')</script>");
 
         $this->actingAs($user)
             ->get(route('home'))
-            ->assertSee('&lt;script&gt;', escape: false)
-            ->assertDontSee("<script>alert('xss')</script>", escape: false);
+            ->assertDontSee('<script>alert', escape: false);
     }
 
-    public function test_shows_the_five_latest_transactions_newest_first(): void
+    public function test_gives_the_five_latest_transactions_newest_first(): void
     {
         $user = User::factory()->create();
         $transactions = Transaction::factory()->count(6)->for($user)->sequence(
@@ -151,21 +159,25 @@ class HomeControllerTest extends TestCase
             ['occurred_on' => '2026-10-06'],
         )->create();
 
-        $response = $this->actingAs($user)->get(route('home'));
-
-        $this->assertSame(
-            $transactions->reverse()->take(5)->pluck('id')->all(),
-            $response->viewData('recentTransactions')->pluck('id')->all(),
-        );
+        $this->actingAs($user)
+            ->get(route('home'))
+            ->assertInertia(fn (Assert $page) => $page->where(
+                'recentTransactions',
+                fn ($recentTransactions) => collect($recentTransactions)->pluck('id')->all() === $transactions->reverse()->take(5)->pluck('id')->values()->all(),
+            ));
     }
 
-    public function test_does_not_show_another_users_latest_transactions(): void
+    public function test_gives_each_latest_transaction_with_its_category_and_whether_it_adds_to_the_balance(): void
     {
-        Transaction::factory()->create(['note' => 'حركة شخص آخر']);
+        $user = User::factory()->create();
+        $expense = Transaction::factory()->for($user)->create(['amount' => '12.50']);
 
-        $this->actingAs(User::factory()->create())
+        $this->actingAs($user)
             ->get(route('home'))
-            ->assertSeeText('لا توجد حركات بعد.')
-            ->assertDontSeeText('حركة شخص آخر');
+            ->assertInertia(fn (Assert $page) => $page
+                ->where('recentTransactions.0.id', $expense->id)
+                ->where('recentTransactions.0.amount', '12.50')
+                ->where('recentTransactions.0.category', $expense->category->name)
+                ->where('recentTransactions.0.adds_to_balance', false));
     }
 }

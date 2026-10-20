@@ -7,6 +7,7 @@ use App\Models\Transaction;
 use App\Models\User;
 use App\Services\TransactionService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Inertia\Testing\AssertableInertia as Assert;
 use Tests\TestCase;
 
 class DebtControllerTest extends TestCase
@@ -26,28 +27,36 @@ class DebtControllerTest extends TestCase
         $this->get(route('debts.index'))->assertRedirect(route('login'));
     }
 
-    public function test_user_without_debts_sees_both_lists_empty(): void
+    public function test_user_without_debts_gets_both_lists_empty(): void
     {
         $this->actingAs(User::factory()->create())
             ->get(route('debts.index'))
             ->assertOk()
-            ->assertSeeText('ما عليك ديون مفتوحة.')
-            ->assertSeeText('ما إلك ديون مفتوحة.');
+            ->assertInertia(fn (Assert $page) => $page
+                ->component('debts/index')
+                ->has('debtsOwedByMe', 0)
+                ->has('debtsOwedToMe', 0));
     }
 
-    public function test_lists_open_debts_by_direction_with_what_is_left_and_a_way_to_pay(): void
+    public function test_lists_open_debts_by_direction_with_what_is_left(): void
     {
         $user = User::factory()->create();
         $partlyPaid = $this->debt($user, DebtDirection::OwedByMe, '500.00', 'خالد');
         $untouched = $this->debt($user, DebtDirection::OwedToMe, '200.00', 'سامي');
         app(TransactionService::class)->repayDebt($partlyPaid, ['amount' => '100.00']);
 
-        $response = $this->actingAs($user)->get(route('debts.index'));
-
-        $response->assertOk()
-            ->assertSeeTextInOrder(['ديون عليّ', 'ديون إلي', 'خالد', '400.00', 'من أصل', '500.00', 'سامي', '200.00'])
-            ->assertSee(route('debts.repayments.store', $partlyPaid), escape: false)
-            ->assertSee(route('debts.repayments.create', $untouched), escape: false);
+        $this->actingAs($user)
+            ->get(route('debts.index'))
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->has('debtsOwedByMe', 1)
+                ->where('debtsOwedByMe.0.id', $partlyPaid->id)
+                ->where('debtsOwedByMe.0.counterparty', 'خالد')
+                ->where('debtsOwedByMe.0.remaining', 400)
+                ->where('debtsOwedByMe.0.amount', 500)
+                ->has('debtsOwedToMe', 1)
+                ->where('debtsOwedToMe.0.id', $untouched->id)
+                ->where('debtsOwedToMe.0.remaining', 200));
     }
 
     public function test_does_not_list_a_debt_that_is_fully_paid(): void
@@ -58,8 +67,7 @@ class DebtControllerTest extends TestCase
 
         $this->actingAs($user)
             ->get(route('debts.index'))
-            ->assertViewHas('debtsOwedToMe', [])
-            ->assertDontSeeText('سامي');
+            ->assertInertia(fn (Assert $page) => $page->has('debtsOwedToMe', 0));
     }
 
     public function test_does_not_list_another_users_debts(): void
@@ -68,11 +76,10 @@ class DebtControllerTest extends TestCase
 
         $this->actingAs(User::factory()->create())
             ->get(route('debts.index'))
-            ->assertViewHas('debtsOwedByMe', [])
-            ->assertDontSeeText('خالد');
+            ->assertInertia(fn (Assert $page) => $page->has('debtsOwedByMe', 0));
     }
 
-    public function test_escapes_dangerous_content_in_a_counterparty_and_a_note(): void
+    public function test_never_sends_the_page_a_raw_script_tag_from_a_counterparty_or_a_note(): void
     {
         $user = User::factory()->create();
         Transaction::factory()->for($user)->debt()->create([
@@ -82,8 +89,6 @@ class DebtControllerTest extends TestCase
 
         $this->actingAs($user)
             ->get(route('debts.index'))
-            ->assertSee('&lt;script&gt;alert(&#039;note&#039;)', escape: false)
-            ->assertDontSee("<script>alert('name')</script>", escape: false)
-            ->assertDontSee("<script>alert('note')</script>", escape: false);
+            ->assertDontSee('<script>alert', escape: false);
     }
 }
