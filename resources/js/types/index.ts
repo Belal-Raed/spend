@@ -52,6 +52,41 @@ export type Debt = {
     note: string | null;
 };
 
+export type AccessStatus = 'trial' | 'subscribed' | 'read_only';
+
+/** What the signed-in user may do with their account, shared with every page. */
+export type Access = {
+    status: AccessStatus;
+    status_label: string;
+    /** The day full access ends, or ended. */
+    ends_on: string | null;
+    days_left: number;
+    /** In the last days of a trial or subscription. */
+    is_ending_soon: boolean;
+};
+
+export type Plan = {
+    id: number;
+    name: string;
+    months: number;
+    /** Null until the admin sets a price. */
+    price: string | null;
+    is_purchasable: boolean;
+};
+
+export type PaymentStatus = 'pending' | 'approved' | 'rejected';
+
+/** A bank transfer receipt the user sent. */
+export type Payment = {
+    id: number;
+    plan: string;
+    amount: string;
+    status: PaymentStatus;
+    status_label: string;
+    rejection_reason: string | null;
+    sent_on: string;
+};
+
 export type Balance = {
     cash: number;
     owed_by_me: number;

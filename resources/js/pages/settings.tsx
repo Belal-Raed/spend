@@ -16,7 +16,8 @@ const themes: Option<Theme>[] = [
 ];
 
 export default function Settings({ customCategoriesCount }: { customCategoriesCount: number }) {
-    const user = usePage().props.auth.user!;
+    const { auth, access } = usePage().props;
+    const user = auth.user!;
     const [theme, setTheme] = useState(savedTheme);
     const [isLogoutSheetOpen, setIsLogoutSheetOpen] = useState(false);
 
@@ -55,6 +56,9 @@ export default function Settings({ customCategoriesCount }: { customCategoriesCo
             />
 
             <Group>
+                <Row href={routes.subscription()} icon="credit-card" tone="bg-tint" detail={<span className="text-muted">{access?.status_label}</span>}>
+                    الاشتراك
+                </Row>
                 <Row
                     href={routes.categories.index()}
                     icon="tag"

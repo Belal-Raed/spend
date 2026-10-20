@@ -8,6 +8,11 @@ export const routes = {
     logout: () => '/logout',
     settings: () => '/settings',
     export: () => '/export',
+    subscription: () => '/subscription',
+
+    payments: {
+        store: () => '/payments',
+    },
 
     transactions: {
         index: () => '/transactions',

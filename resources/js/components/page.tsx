@@ -1,5 +1,6 @@
 import { Head, Link, usePage } from '@inertiajs/react';
 import { useEffect, useRef, useState, type ReactNode } from 'react';
+import AccessBanner from '@/components/access-banner';
 import Icon, { type IconName } from '@/components/icon';
 import Toast from '@/components/toast';
 import { cx } from '@/lib/cx';
@@ -143,6 +144,7 @@ export default function Page({
                     )}
                 >
                     {modal && <h1 className="sr-only">{title}</h1>}
+                    {!modal && path !== routes.subscription() && <AccessBanner />}
                     {children}
                 </main>
             </div>

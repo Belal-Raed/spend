@@ -31,4 +31,26 @@ class UserFactory extends Factory
             'remember_token' => Str::random(10),
         ];
     }
+
+    /**
+     * A user whose trial ended without a subscription, so their account is read-only.
+     */
+    public function readOnly(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'trial_ends_at' => now()->subDay(),
+            'subscription_ends_at' => null,
+        ]);
+    }
+
+    /**
+     * A user with a subscription running until the given time.
+     */
+    public function subscribedUntil(\DateTimeInterface $endsAt): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'trial_ends_at' => now()->subMonth(),
+            'subscription_ends_at' => $endsAt,
+        ]);
+    }
 }
