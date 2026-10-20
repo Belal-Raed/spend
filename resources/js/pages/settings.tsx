@@ -2,6 +2,7 @@ import { usePage } from '@inertiajs/react';
 import { useState } from 'react';
 import { ActionSheet, SheetAction } from '@/components/action-sheet';
 import Group from '@/components/group';
+import InstallButton from '@/components/install-button';
 import Page from '@/components/page';
 import Row from '@/components/row';
 import { Segmented } from '@/components/segmented';
@@ -41,6 +42,8 @@ export default function Settings({ customCategoriesCount }: { customCategoriesCo
                     )}
                 </div>
             </section>
+
+            <InstallButton variant="row" />
 
             {/* The choice is kept on this device only. */}
             <Segmented
