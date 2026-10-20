@@ -9,6 +9,7 @@ use App\Models\Transaction;
 use App\Models\User;
 use App\Services\TransactionService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Inertia\Testing\AssertableInertia as Assert;
 use Tests\TestCase;
 
 class TransactionControllerTest extends TestCase
@@ -57,7 +58,7 @@ class TransactionControllerTest extends TestCase
      */
     private function listedIds(mixed $response): array
     {
-        return $response->viewData('transactions')->pluck('id')->all();
+        return array_column($response->inertiaProps('transactions.data'), 'id');
     }
 
     // Index
@@ -87,11 +88,12 @@ class TransactionControllerTest extends TestCase
         $this->actingAs(User::factory()->create())
             ->get(route('transactions.index'))
             ->assertOk()
-            ->assertSeeText('لا توجد حركات.')
-            ->assertDontSeeText('حركة شخص آخر');
+            ->assertInertia(fn (Assert $page) => $page
+                ->component('transactions/index')
+                ->has('transactions.data', 0));
     }
 
-    public function test_shows_each_kind_of_transaction_with_a_signed_amount(): void
+    public function test_gives_each_kind_of_transaction_with_what_the_page_needs_to_describe_it(): void
     {
         $user = User::factory()->create();
         $food = Category::factory()->create(['name' => 'أكل']);
@@ -107,12 +109,22 @@ class TransactionControllerTest extends TestCase
 
         $this->actingAs($user)
             ->get(route('transactions.index'))
-            ->assertSeeTextInOrder([
-                'سداد دين · سامي', '200.00',
-                'مصروف · أكل', '-45.50',
-                'قبض · راتب', '3,000.00',
-                'دين إلي · سامي', 'انسدّ', '-200.00',
-            ]);
+            ->assertInertia(fn (Assert $page) => $page
+                ->has('transactions.data', 4)
+                ->where('transactions.data.0.is_repayment', true)
+                ->where('transactions.data.0.counterparty', 'سامي')
+                ->where('transactions.data.0.adds_to_balance', true)
+                ->where('transactions.data.1.type_label', 'مصروف')
+                ->where('transactions.data.1.category', 'أكل')
+                ->where('transactions.data.1.amount', '45.50')
+                ->where('transactions.data.1.adds_to_balance', false)
+                ->where('transactions.data.2.type_label', 'قبض')
+                ->where('transactions.data.2.category', 'راتب')
+                ->where('transactions.data.2.adds_to_balance', true)
+                ->where('transactions.data.3.is_debt', true)
+                ->where('transactions.data.3.debt_direction_label', 'إلي')
+                ->where('transactions.data.3.is_settled', true)
+                ->where('transactions.data.3.adds_to_balance', false));
     }
 
     public function test_filters_the_list_by_period(): void
@@ -159,7 +171,9 @@ class TransactionControllerTest extends TestCase
         $response = $this->actingAs($user)->get(route('transactions.index', ['category' => $othersCategory->id]));
 
         $this->assertSame([$transaction->id], $this->listedIds($response));
-        $response->assertDontSeeText('تصنيف خاص');
+        $response->assertInertia(fn (Assert $page) => $page
+            ->where('category', null)
+            ->where('categoryGroups', fn ($groups) => collect($groups)->pluck('categories')->flatten(1)->doesntContain('id', $othersCategory->id)));
     }
 
     public function test_shows_twenty_transactions_per_page_and_keeps_the_filter_in_the_next_link(): void
@@ -171,18 +185,17 @@ class TransactionControllerTest extends TestCase
         $response = $this->actingAs($user)->get(route('transactions.index', ['category' => $category->id]));
 
         $this->assertCount(20, $this->listedIds($response));
-        $response->assertSee('category='.$category->id.'&amp;page=2', escape: false);
+        $this->assertStringContainsString('category='.$category->id.'&page=2', $response->inertiaProps('transactions.links.next'));
     }
 
-    public function test_escapes_dangerous_content_in_a_note(): void
+    public function test_never_sends_the_page_a_raw_script_tag_from_a_note(): void
     {
         $user = User::factory()->create();
         Transaction::factory()->for($user)->create(['note' => "<script>alert('xss')</script>"]);
 
         $this->actingAs($user)
             ->get(route('transactions.index'))
-            ->assertSee('&lt;script&gt;', escape: false)
-            ->assertDontSee("<script>alert('xss')</script>", escape: false);
+            ->assertDontSee('<script>alert', escape: false);
     }
 
     // Create
@@ -202,8 +215,10 @@ class TransactionControllerTest extends TestCase
 
         $response = $this->actingAs($user)->get(route('transactions.create'));
 
-        $response->assertOk()->assertViewHas('type', TransactionType::Expense);
-        $this->assertEqualsCanonicalizing([$default->id, $own->id], $response->viewData('categories')->pluck('id')->all());
+        $response->assertOk()->assertInertia(fn (Assert $page) => $page
+            ->component('transactions/create')
+            ->where('type', TransactionType::Expense->value));
+        $this->assertEqualsCanonicalizing([$default->id, $own->id], array_column($response->inertiaProps('categories'), 'id'));
     }
 
     public function test_new_transaction_form_lists_categories_by_name_with_the_catch_all_last(): void
@@ -215,7 +230,7 @@ class TransactionControllerTest extends TestCase
 
         $response = $this->actingAs($user)->get(route('transactions.create'));
 
-        $this->assertSame(['أقساط', 'مواصلات', 'أخرى'], $response->viewData('categories')->pluck('name')->all());
+        $this->assertSame(['أقساط', 'مواصلات', 'أخرى'], array_column($response->inertiaProps('categories'), 'name'));
     }
 
     public function test_income_form_offers_income_categories(): void
@@ -225,19 +240,20 @@ class TransactionControllerTest extends TestCase
 
         $response = $this->actingAs(User::factory()->create())->get(route('transactions.create', ['type' => 'income']));
 
-        $response->assertViewHas('type', TransactionType::Income);
-        $this->assertSame([$salary->id], $response->viewData('categories')->pluck('id')->all());
+        $response->assertInertia(fn (Assert $page) => $page->where('type', TransactionType::Income->value));
+        $this->assertSame([$salary->id], array_column($response->inertiaProps('categories'), 'id'));
     }
 
-    public function test_debt_form_asks_for_a_direction_and_no_category(): void
+    public function test_debt_form_offers_no_category(): void
     {
         Category::factory()->create();
 
         $this->actingAs(User::factory()->create())
             ->get(route('transactions.create', ['type' => 'debt']))
             ->assertOk()
-            ->assertSee('name="debt_direction"', escape: false)
-            ->assertDontSee('name="category_id"', escape: false);
+            ->assertInertia(fn (Assert $page) => $page
+                ->where('type', TransactionType::Debt->value)
+                ->has('categories', 0));
     }
 
     public function test_unknown_type_falls_back_to_the_expense_form(): void
@@ -245,7 +261,7 @@ class TransactionControllerTest extends TestCase
         $this->actingAs(User::factory()->create())
             ->get(route('transactions.create', ['type' => 'gift']))
             ->assertOk()
-            ->assertViewHas('type', TransactionType::Expense);
+            ->assertInertia(fn (Assert $page) => $page->where('type', TransactionType::Expense->value));
     }
 
     // Store
@@ -414,8 +430,12 @@ class TransactionControllerTest extends TestCase
         $this->actingAs($user)
             ->get(route('transactions.edit', $transaction))
             ->assertOk()
-            ->assertSee('value="45.50"', escape: false)
-            ->assertSee('value="غداء"', escape: false);
+            ->assertInertia(fn (Assert $page) => $page
+                ->component('transactions/edit')
+                ->where('transaction.id', $transaction->id)
+                ->where('transaction.amount', '45.50')
+                ->where('transaction.note', 'غداء')
+                ->where('transaction.category', $transaction->category->name));
     }
 
     public function test_another_user_is_forbidden_from_the_edit_form(): void
@@ -427,7 +447,7 @@ class TransactionControllerTest extends TestCase
             ->assertForbidden();
     }
 
-    public function test_edit_form_for_a_debt_payment_has_no_category_or_counterparty_field(): void
+    public function test_edit_form_for_a_debt_payment_offers_no_category(): void
     {
         $user = User::factory()->create();
         Category::factory()->create();
@@ -436,8 +456,9 @@ class TransactionControllerTest extends TestCase
         $this->actingAs($user)
             ->get(route('transactions.edit', $repayment))
             ->assertOk()
-            ->assertDontSee('name="category_id"', escape: false)
-            ->assertDontSee('name="counterparty"', escape: false);
+            ->assertInertia(fn (Assert $page) => $page
+                ->where('transaction.is_repayment', true)
+                ->has('categories', 0));
     }
 
     // Update
