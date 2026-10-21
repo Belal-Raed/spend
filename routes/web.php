@@ -10,9 +10,13 @@ use App\Http\Controllers\HomeController;
 use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\SettingsController;
 use App\Http\Controllers\SubscriptionController;
+use App\Http\Controllers\TelegramLinkController;
+use App\Http\Controllers\TelegramWebhookController;
 use App\Http\Controllers\TransactionController;
 use App\Http\Middleware\EnsureAccountIsWritable;
 use Illuminate\Support\Facades\Route;
+
+Route::post('/telegram/webhook', TelegramWebhookController::class)->name('telegram.webhook');
 
 Route::middleware('guest')->group(function () {
     Route::get('/login', [LoginController::class, 'create'])->name('login');
@@ -34,6 +38,9 @@ Route::middleware('auth')->group(function () {
 
     Route::get('/subscription', SubscriptionController::class)->name('subscription');
     Route::post('/payments', [PaymentController::class, 'store'])->name('payments.store');
+
+    Route::post('/telegram/link', [TelegramLinkController::class, 'store'])->name('telegram.link');
+    Route::delete('/telegram/link', [TelegramLinkController::class, 'destroy'])->name('telegram.unlink');
 
     Route::post('/logout', [LoginController::class, 'destroy'])->name('logout');
 

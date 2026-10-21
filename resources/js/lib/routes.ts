@@ -14,6 +14,11 @@ export const routes = {
         store: () => '/payments',
     },
 
+    telegram: {
+        link: () => '/telegram/link',
+        unlink: () => '/telegram/link',
+    },
+
     transactions: {
         index: () => '/transactions',
         create: (type?: string) => (type ? `/transactions/create?type=${type}` : '/transactions/create'),

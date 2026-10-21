@@ -37,6 +37,12 @@ return [
 
     'telegram' => [
         'bot_token' => env('TELEGRAM_BOT_TOKEN'),
+        // The bot's @username without the @, for the link that opens it from settings.
+        'bot_username' => env('TELEGRAM_BOT_USERNAME'),
+        // Telegram sends it back with every update, so the webhook knows the request is real.
+        'webhook_secret' => env('TELEGRAM_WEBHOOK_SECRET'),
+        // Messages one user may send the bot per hour, to keep within Groq's free limits.
+        'messages_per_hour' => 30,
     ],
 
     'groq' => [
