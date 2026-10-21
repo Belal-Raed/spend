@@ -17,7 +17,8 @@ use Illuminate\Support\Str;
  * A user links their Telegram account from the app's settings, which opens
  * the bot with a one-time code. Linked users with full access write to the
  * bot in everyday Arabic and ExpenseAgent does the rest; what it records
- * comes back with a button to undo it.
+ * comes back with a button to undo it. The admin can turn the assistant off
+ * for one user, who can then still link and undo but not send it messages.
  */
 class TelegramBot
 {
@@ -101,6 +102,13 @@ class TelegramBot
 
         if ($text === '' || str_starts_with($text, '/')) {
             $this->telegram->sendMessage($chatId, 'اكتب لي رسالة عادية، مثل: «صرفت 50 على أكل».');
+
+            return;
+        }
+
+        // Checked before the subscription, since subscribing would not turn it back on.
+        if (! $user->is_agent_enabled) {
+            $this->telegram->sendMessage($chatId, "المساعد موقوف لحسابك. تقدر تسجّل حركاتك من التطبيق:\n".route('home'));
 
             return;
         }

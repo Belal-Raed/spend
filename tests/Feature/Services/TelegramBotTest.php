@@ -154,6 +154,30 @@ class TelegramBotTest extends TestCase
         Http::assertNotSent(fn (Request $request): bool => str_contains($request->url(), 'groq'));
     }
 
+    public function test_user_whose_assistant_is_off_is_sent_to_the_app_without_asking_groq(): void
+    {
+        $this->fakeTelegram();
+        User::factory()->withoutAgent()->create(['telegram_id' => self::TELEGRAM_ID]);
+
+        $this->send('صرفت 50 على أكل');
+
+        $this->assertSame(["المساعد موقوف لحسابك. تقدر تسجّل حركاتك من التطبيق:\n".route('home')], $this->sentTexts());
+        Http::assertNotSent(fn (Request $request): bool => str_contains($request->url(), 'groq'));
+    }
+
+    public function test_user_whose_assistant_is_off_can_still_link_and_undo(): void
+    {
+        $this->fakeTelegram();
+        $user = User::factory()->withoutAgent()->create();
+        $expense = Transaction::factory()->for($user)->create();
+
+        $this->send('/start '.str($this->bot()->linkUrl($user))->afterLast('='));
+        $this->tap("undo:{$expense->id}");
+
+        $this->assertSame(self::TELEGRAM_ID, $user->fresh()->telegram_id);
+        $this->assertModelMissing($expense);
+    }
+
     public function test_records_what_the_user_writes_and_offers_to_undo_it(): void
     {
         $user = $this->linkedUser();

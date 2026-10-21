@@ -27,6 +27,34 @@ class UserResourceTest extends TestCase
             ->assertCanNotSeeTableRecords([$subscribed, $onTrial, $admin]);
     }
 
+    public function test_admin_turns_the_assistant_off_and_on_for_one_user(): void
+    {
+        $user = User::factory()->create();
+        $other = User::factory()->create();
+        $this->actingAs(User::factory()->admin()->create());
+
+        Livewire::test(ManageUsers::class)->call('updateTableColumnState', 'is_agent_enabled', (string) $user->getKey(), false);
+
+        $this->assertFalse($user->fresh()->is_agent_enabled);
+        $this->assertTrue($other->fresh()->is_agent_enabled);
+
+        Livewire::test(ManageUsers::class)->call('updateTableColumnState', 'is_agent_enabled', (string) $user->getKey(), true);
+
+        $this->assertTrue($user->fresh()->is_agent_enabled);
+    }
+
+    public function test_filters_users_whose_assistant_is_off(): void
+    {
+        $off = User::factory()->withoutAgent()->create();
+        $on = User::factory()->create();
+        $this->actingAs(User::factory()->admin()->create());
+
+        Livewire::test(ManageUsers::class)
+            ->filterTable('is_agent_enabled', false)
+            ->assertCanSeeTableRecords([$off])
+            ->assertCanNotSeeTableRecords([$on]);
+    }
+
     public function test_admin_gives_a_read_only_user_days_from_today(): void
     {
         Carbon::setTestNow('2026-10-21 09:00');

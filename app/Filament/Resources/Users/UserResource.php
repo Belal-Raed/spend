@@ -14,7 +14,9 @@ use Filament\Resources\Resource;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Columns\ToggleColumn;
 use Filament\Tables\Filters\SelectFilter;
+use Filament\Tables\Filters\TernaryFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 
@@ -22,7 +24,8 @@ use Illuminate\Database\Eloquent\Builder;
  * Users' accounts and subscriptions.
  *
  * Only account details are shown: users' transactions and categories stay
- * private to them, even from the admin.
+ * private to them, even from the admin. The admin can turn the Telegram
+ * bot's assistant off for a user from their row.
  */
 class UserResource extends Resource
 {
@@ -69,6 +72,9 @@ class UserResource extends Resource
                     ->label('سجّل في')
                     ->date('Y-m-d')
                     ->sortable(),
+                ToggleColumn::make('is_agent_enabled')
+                    ->label('المساعد')
+                    ->tooltip('مساعد بوت تيليجرام لهذا المستخدم'),
                 IconColumn::make('is_admin')
                     ->label('أدمن')
                     ->boolean()
@@ -76,6 +82,10 @@ class UserResource extends Resource
                     ->falseIcon(null),
             ])
             ->filters([
+                TernaryFilter::make('is_agent_enabled')
+                    ->label('المساعد')
+                    ->trueLabel('مفعّل')
+                    ->falseLabel('موقوف'),
                 SelectFilter::make('access')
                     ->label('الحالة')
                     ->options(collect(AccessStatus::cases())->mapWithKeys(fn (AccessStatus $status): array => [$status->value => $status->label()]))
