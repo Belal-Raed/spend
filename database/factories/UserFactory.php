@@ -33,6 +33,16 @@ class UserFactory extends Factory
     }
 
     /**
+     * A user who can open the admin panel.
+     */
+    public function admin(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'is_admin' => true,
+        ]);
+    }
+
+    /**
      * A user whose trial ended without a subscription, so their account is read-only.
      */
     public function readOnly(): static

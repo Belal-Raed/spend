@@ -6,15 +6,18 @@ use App\Enums\PaymentStatus;
 use App\Models\Payment;
 use App\Models\Plan;
 use App\Models\User;
+use App\Notifications\PaymentSubmitted;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Notification;
 use Illuminate\Validation\ValidationException;
 
 /**
  * Takes bank transfer receipts from users and lets the admin approve or reject them.
  *
- * Approving extends the user's subscription by the plan's length, starting
- * when their current trial or subscription ends, so paying early loses nothing.
+ * A new receipt notifies every admin. Approving extends the user's
+ * subscription by the plan's length, starting when their current trial or
+ * subscription ends, so paying early loses nothing.
  */
 class PaymentService
 {
@@ -31,7 +34,7 @@ class PaymentService
             throw ValidationException::withMessages(['plan_id' => 'This plan cannot be bought now.']);
         }
 
-        return DB::transaction(function () use ($user, $plan, $receipt): Payment {
+        $payment = DB::transaction(function () use ($user, $plan, $receipt): Payment {
             User::query()->lockForUpdate()->findOrFail($user->id);
 
             if ($user->payments()->pending()->exists()) {
@@ -45,6 +48,24 @@ class PaymentService
                 'status' => PaymentStatus::Pending,
             ]);
         });
+
+        Notification::send(User::query()->admins()->get(), new PaymentSubmitted($payment));
+
+        return $payment;
+    }
+
+    /**
+     * Give the user extra days of full access, such as a gift or a make-good,
+     * starting when their current trial or subscription ends.
+     */
+    public function grantDays(User $user, int $days): void
+    {
+        DB::transaction(function () use ($user, $days): void {
+            $user = User::query()->lockForUpdate()->findOrFail($user->id);
+
+            $user->subscription_ends_at = $user->nextSubscriptionStart()->addDays($days);
+            $user->save();
+        });
     }
 
     /**
@@ -55,10 +76,7 @@ class PaymentService
     public function approve(Payment $payment): Payment
     {
         return $this->review($payment, function (Payment $payment, User $user): void {
-            $accessEndsAt = $user->accessEndsAt();
-            $startsAt = $accessEndsAt?->isFuture() ? $accessEndsAt : now();
-
-            $user->subscription_ends_at = $startsAt->copy()->addMonthsNoOverflow($payment->plan->months);
+            $user->subscription_ends_at = $user->nextSubscriptionStart()->addMonthsNoOverflow($payment->plan->months);
             $user->save();
 
             $payment->update(['status' => PaymentStatus::Approved, 'reviewed_at' => now()]);

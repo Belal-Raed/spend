@@ -3,13 +3,16 @@
 namespace Tests\Feature\Services;
 
 use App\Enums\PaymentStatus;
+use App\Filament\Resources\Payments\PaymentResource;
 use App\Models\Payment;
 use App\Models\Plan;
 use App\Models\User;
+use App\Notifications\PaymentSubmitted;
 use App\Services\PaymentService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
 use Tests\TestCase;
@@ -57,6 +60,40 @@ class PaymentServiceTest extends TestCase
         $this->assertSame('45.00', $payment->amount);
         $this->assertStringStartsWith("receipts/{$user->id}/", $payment->receipt_path);
         Storage::disk('local')->assertExists($payment->receipt_path);
+    }
+
+    public function test_submitting_notifies_every_admin_and_no_one_else(): void
+    {
+        Notification::fake();
+        $admins = User::factory()->admin()->count(2)->create();
+        $user = $this->signIn();
+
+        $this->service()->submit($user, Plan::factory()->create(), $this->receipt());
+
+        Notification::assertSentTo($admins, PaymentSubmitted::class);
+        Notification::assertNotSentTo($user, PaymentSubmitted::class);
+    }
+
+    public function test_admin_notification_links_to_the_receipt_in_the_panel(): void
+    {
+        $admin = User::factory()->admin()->create();
+        $user = $this->signIn();
+
+        $payment = $this->service()->submit($user, Plan::factory()->create(['name' => 'شهري']), $this->receipt());
+
+        $notification = $admin->notifications()->sole();
+        $this->assertSame('إشعار تحويل جديد', $notification->data['title']);
+        $this->assertSame("{$user->name} · شهري", $notification->data['body']);
+        $this->assertSame(PaymentResource::getUrl('view', ['record' => $payment], panel: 'admin'), $notification->data['actions'][0]['url']);
+    }
+
+    public function test_granting_days_to_a_user_on_trial_adds_them_after_the_trial(): void
+    {
+        $user = User::factory()->create(['trial_ends_at' => '2026-10-25 09:00']);
+
+        $this->service()->grantDays($user, 10);
+
+        $this->assertSame('2026-11-04 09:00:00', $user->fresh()->subscription_ends_at->toDateTimeString());
     }
 
     public function test_submitting_for_a_plan_without_a_price_is_refused(): void
