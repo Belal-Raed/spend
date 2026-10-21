@@ -121,10 +121,10 @@ class LoginControllerTest extends TestCase
     {
         $user = User::factory()->create();
 
-        $this->get(route('home'))->assertRedirect(route('login'));
+        $this->get(route('transactions.index'))->assertRedirect(route('login'));
 
         $this->post(route('login.store'), ['phone' => $user->phone, 'password' => 'password'])
-            ->assertRedirect(route('home'));
+            ->assertRedirect(route('transactions.index'));
     }
 
     public function test_logout_signs_the_user_out(): void

@@ -24,9 +24,9 @@ class HomeControllerTest extends TestCase
         ]);
     }
 
-    public function test_guest_is_redirected_to_login(): void
+    public function test_guest_is_sent_to_sign_up(): void
     {
-        $this->get(route('home'))->assertRedirect(route('login'));
+        $this->get(route('home'))->assertRedirect(route('register'));
     }
 
     public function test_signed_in_user_gets_their_name(): void

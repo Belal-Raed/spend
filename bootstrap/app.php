@@ -21,6 +21,10 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->preventRequestForgery(except: [
             'telegram/webhook',
         ]);
+
+        // A visitor opening the app's address is most likely new, so they land on sign-up.
+        // Any other page was most likely opened by a user whose session ended, so they sign in.
+        $middleware->redirectGuestsTo(fn (Request $request) => $request->is('/') ? route('register') : route('login'));
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->shouldRenderJsonWhen(
