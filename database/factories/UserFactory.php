@@ -43,6 +43,16 @@ class UserFactory extends Factory
     }
 
     /**
+     * A user the admin turned the bot's assistant off for.
+     */
+    public function withoutAgent(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'is_agent_enabled' => false,
+        ]);
+    }
+
+    /**
      * A user whose trial ended without a subscription, so their account is read-only.
      */
     public function readOnly(): static

@@ -20,6 +20,7 @@ use Illuminate\Notifications\Notifiable;
  * @property ?CarbonInterface $trial_ends_at
  * @property ?CarbonInterface $subscription_ends_at
  * @property bool $is_admin
+ * @property bool $is_agent_enabled
  */
 #[Fillable(['telegram_id', 'name', 'phone', 'password'])]
 #[Hidden(['password', 'remember_token'])]
@@ -27,6 +28,16 @@ class User extends Authenticatable implements FilamentUser
 {
     /** @use HasFactory<UserFactory> */
     use HasFactory, Notifiable;
+
+    /**
+     * The columns' defaults, so a user made in code reads them before it is reloaded.
+     *
+     * @var array<string, mixed>
+     */
+    protected $attributes = [
+        'is_admin' => false,
+        'is_agent_enabled' => true,
+    ];
 
     /**
      * Every new user starts with a free trial.
@@ -50,6 +61,7 @@ class User extends Authenticatable implements FilamentUser
             'trial_ends_at' => 'datetime',
             'subscription_ends_at' => 'datetime',
             'is_admin' => 'boolean',
+            'is_agent_enabled' => 'boolean',
         ];
     }
 
