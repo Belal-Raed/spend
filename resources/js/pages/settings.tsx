@@ -1,4 +1,4 @@
-import { usePage } from '@inertiajs/react';
+import { router, usePage } from '@inertiajs/react';
 import { useState } from 'react';
 import { ActionSheet, SheetAction } from '@/components/action-sheet';
 import Group from '@/components/group';
@@ -16,11 +16,18 @@ const themes: Option<Theme>[] = [
     { value: 'dark', label: 'داكن' },
 ];
 
-export default function Settings({ customCategoriesCount }: { customCategoriesCount: number }) {
+export default function Settings({
+    customCategoriesCount,
+    telegram,
+}: {
+    customCategoriesCount: number;
+    telegram: { isAvailable: boolean; isLinked: boolean };
+}) {
     const { auth, access } = usePage().props;
     const user = auth.user!;
     const [theme, setTheme] = useState(savedTheme);
     const [isLogoutSheetOpen, setIsLogoutSheetOpen] = useState(false);
+    const [isUnlinkSheetOpen, setIsUnlinkSheetOpen] = useState(false);
 
     return (
         <Page title="الإعدادات" trailing={null}>
@@ -78,11 +85,31 @@ export default function Settings({ customCategoriesCount }: { customCategoriesCo
                 </Row>
             </Group>
 
+            {telegram.isAvailable && (
+                <Group footer={telegram.isLinked ? null : 'سجّل مصاريفك برسالة للبوت، مثل «صرفت 50 على أكل».'}>
+                    <Row
+                        onClick={() => (telegram.isLinked ? setIsUnlinkSheetOpen(true) : router.post(routes.telegram.link()))}
+                        icon="paper-airplane"
+                        tone="bg-sky-500"
+                        chevron={!telegram.isLinked}
+                        detail={telegram.isLinked && <span className="text-muted">مربوط</span>}
+                    >
+                        {telegram.isLinked ? 'بوت تيليجرام' : 'ربط تيليجرام'}
+                    </Row>
+                </Group>
+            )}
+
             <Group>
                 <Row onClick={() => setIsLogoutSheetOpen(true)} destructive chevron={false}>
                     <span className="text-center">تسجيل الخروج</span>
                 </Row>
             </Group>
+
+            <ActionSheet open={isUnlinkSheetOpen} onClose={() => setIsUnlinkSheetOpen(false)} message="بعد فك الربط ما رح يرد البوت على حسابك في تيليجرام.">
+                <SheetAction action={routes.telegram.unlink()} method="delete" destructive>
+                    فك ربط تيليجرام
+                </SheetAction>
+            </ActionSheet>
 
             <ActionSheet open={isLogoutSheetOpen} onClose={() => setIsLogoutSheetOpen(false)} message="تريد تسجيل الخروج من مصاريفي؟">
                 <SheetAction action={routes.logout()} destructive>
